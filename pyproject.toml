@@ -58,3 +58,11 @@ select = ["D", "I"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.hatch.build.targets.wheel]
+# Only include the src/coronablink package in the wheel
+packages = ["src/coronablink"]
+
+[tool.hatch.build.targets.sdist]
+# Exclude large data files and development artifacts from sdist
+exclude = ["/data", "/scripts", "/docs", "/tests", "/.github"]
