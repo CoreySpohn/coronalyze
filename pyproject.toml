@@ -3,7 +3,7 @@ requires = ['hatchling', "hatch-fancy-pypi-readme", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "coronalyze"
+name = "coronablink"
 description = "A JAX-based library for post-processing coronagraphic direct imaging data."
 authors = [{ name = "Corey Spohn", email = "corey.a.spohn@nasa.gov" }]
 dynamic = ['readme', 'version']
@@ -17,30 +17,35 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Astronomy",
 ]
 dependencies = [
+  "equinox",
   "jax",
   "jaxlib",
+  "matplotlib>=3.10.8",
   "numpy",
+  "pooch",
 ]
 [project.optional-dependencies]
+coronagraphoto = ["coronagraphoto"]
 dev = ["ruff", "pre-commit"]
 docs = [
   "sphinx",
-  "myst-parser",
+  "myst-nb",
   "sphinx-book-theme",
   "sphinx-autoapi",
   "sphinx_autodoc_typehints",
+  "ipython",
 ]
 test = ["nox", "pytest", "hypothesis", "pytest-cov"]
 
 [project.urls]
-Homepage = "https://github.com/CoreySpohn/coronalyze"
-Issues = "https://github.com/CoreySpohn/coronalyze/issues"
+Homepage = "https://github.com/CoreySpohn/coronablink"
+Issues = "https://github.com/CoreySpohn/coronablink/issues"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/coronalyze/_version.py"
+version-file = "src/coronablink/_version.py"
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
