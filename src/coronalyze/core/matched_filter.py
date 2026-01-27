@@ -40,10 +40,11 @@ class MatchedFilterSNREstimator(eqx.Module):
 
     Note: For production use, prefer SNREstimator (Mawet method).
 
-    Example:
-        >>> from coronalyze.core.matched_filter import matched_filter_snr_estimator
-        >>> estimator = matched_filter_snr_estimator(fwhm=4.0)
-        >>> snrs = estimator(image, positions)
+    Example::
+
+        from coronalyze.core.matched_filter import matched_filter_snr_estimator
+        estimator = matched_filter_snr_estimator(fwhm=4.0)
+        snrs = estimator(image, positions)
     """
 
     # Dynamic fields

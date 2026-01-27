@@ -44,11 +44,12 @@ def klip_subtract(
     Returns:
         Residual image after KLIP subtraction.
 
-    Example:
-        >>> # ADI with KLIP
-        >>> residual = klip_subtract(science, roll_cube, n_modes=10)
-        >>> # If you also need disk subtraction, do it after:
-        >>> residual = subtract_disk(residual, disk_model)
+    Example::
+
+        # ADI with KLIP
+        residual = klip_subtract(science, roll_cube, n_modes=10)
+        # If you also need disk subtraction, do it after:
+        residual = subtract_disk(residual, disk_model)
     """
     basis, mean_ref = get_pca_basis(reference_cube, n_modes)
     return pca_subtract(science, basis, mean_ref)
@@ -93,16 +94,17 @@ def calculate_yield_snr(
     Returns:
         SNR values for each planet position.
 
-    Example:
-        >>> # Fast yield calculation with static PSF
-        >>> snrs = calculate_yield_snr(
-        ...     science_image,
-        ...     planet_positions,
-        ...     fwhm=4.5,
-        ...     star_model=star_expectation,
-        ...     disk_model=disk_expectation,
-        ...     method="star"
-        ... )
+    Example::
+
+        # Fast yield calculation with static PSF
+        snrs = calculate_yield_snr(
+            science_image,
+            planet_positions,
+            fwhm=4.5,
+            star_model=star_expectation,
+            disk_model=disk_expectation,
+            method="star"
+        )
     """
     if method == "star":
         if star_model is None:

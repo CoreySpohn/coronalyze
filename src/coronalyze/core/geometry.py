@@ -66,10 +66,11 @@ def calculate_n_apertures(
     Returns:
         Number of valid reference apertures.
 
-    Example:
-        >>> from coronalyze.core.geometry import calculate_n_apertures
-        >>> n = calculate_n_apertures(radius=20, fwhm=5.0)
-        >>> print(f"{n} reference apertures at r=20px")
+    Example::
+
+        from coronalyze.core.geometry import calculate_n_apertures
+        n = calculate_n_apertures(radius=20, fwhm=5.0)
+        print(f"{n} reference apertures at r=20px")
     """
     half_angle = jnp.arcsin(jnp.minimum(fwhm / 2.0 / jnp.maximum(radius, 0.1), 1.0))
     d_theta = 2.0 * half_angle

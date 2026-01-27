@@ -133,10 +133,11 @@ def subtract_star(
     Returns:
         Residual image containing noise + planet signal.
 
-    Example:
-        >>> residual = subtract_star(observation, star_expectation)
-        >>> # With scaling for brightness mismatch:
-        >>> residual = subtract_star(observation, star_expectation, scale=0.95)
+    Example::
+
+        residual = subtract_star(observation, star_expectation)
+        # With scaling for brightness mismatch:
+        residual = subtract_star(observation, star_expectation, scale=0.95)
     """
     return science - scale * star_model
 
@@ -162,9 +163,10 @@ def subtract_disk(
     Returns:
         Residual image with disk contribution removed.
 
-    Example:
-        >>> # Two-step subtraction
-        >>> residual = subtract_star(observation, star_model)
-        >>> residual = subtract_disk(residual, disk_model)
+    Example::
+
+        # Two-step subtraction
+        residual = subtract_star(observation, star_model)
+        residual = subtract_disk(residual, disk_model)
     """
     return residual - scale * disk_model

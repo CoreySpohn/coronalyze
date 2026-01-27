@@ -42,15 +42,16 @@ class SNREstimator(eqx.Module):
     The SNR is calculated using small-sample statistics correction:
         SNR = (x_planet - x_bg_mean) / (sigma_bg * sqrt(1 + 1/n_bg))
 
-    Example:
-        >>> # High-performance pipeline usage
-        >>> estimator = snr_estimator(fwhm=4.0, fast=True)
-        >>>
-        >>> @jax.jit
-        >>> def process_cube(images, positions):
-        ...     return jax.vmap(lambda img: estimator(img, positions))(images)
-        >>>
-        >>> snrs = process_cube(image_cube, planet_positions)
+    Example::
+
+        # High-performance pipeline usage
+        estimator = snr_estimator(fwhm=4.0, fast=True)
+
+        @jax.jit
+        def process_cube(images, positions):
+            return jax.vmap(lambda img: estimator(img, positions))(images)
+
+        snrs = process_cube(image_cube, planet_positions)
 
     Reference:
         Mawet et al. (2014), ApJ, 792, 97
@@ -183,12 +184,13 @@ def snr_estimator(
     Returns:
         SNREstimator instance ready for use.
 
-    Example:
-        >>> estimator = snr_estimator(fwhm=4.0, fast=True)
-        >>>
-        >>> @jax.jit
-        >>> def pipeline(images, positions):
-        ...     return jax.vmap(lambda img: estimator(img, positions))(images)
+    Example::
+
+        estimator = snr_estimator(fwhm=4.0, fast=True)
+
+        @jax.jit
+        def pipeline(images, positions):
+            return jax.vmap(lambda img: estimator(img, positions))(images)
     """
     return SNREstimator(
         fwhm=fwhm,
