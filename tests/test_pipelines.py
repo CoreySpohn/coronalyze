@@ -120,7 +120,9 @@ class TestCalculateYieldSNR:
         ref_cube = jax.random.normal(key, (n_frames, ny, nx))
         science = jax.random.normal(jax.random.PRNGKey(2), (ny, nx))
 
-        positions = jnp.array([[16.0, 16.0]])
+        # Position must be at radius >= fwhm from center for valid SNR
+        # Center is (15.5, 15.5), so (20, 20) gives radius ~ 6.4 > fwhm=3
+        positions = jnp.array([[20.0, 20.0]])
         snrs = calculate_yield_snr(
             science,
             positions,
