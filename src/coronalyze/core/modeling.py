@@ -9,7 +9,7 @@ import functools
 import jax
 import jax.numpy as jnp
 
-from coronablink.core.image_transforms import shift_image
+from coronalyze.core.image_transforms import shift_image
 
 
 @jax.jit

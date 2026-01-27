@@ -1,6 +1,6 @@
 """Interface adapters for integrating with external packages."""
 
-from coronablink.interfaces.coronagraphoto import (
+from coronalyze.interfaces.coronagraphoto import (
     analyze_observation,
     extract_image,
     get_fwhm,

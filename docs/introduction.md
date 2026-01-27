@@ -1,6 +1,6 @@
-# Introduction to coronablink
+# Introduction to coronalyze
 
-coronablink is the analysis companion to coronagraphoto. It handles post-processing—everything that happens after the photons hit the detector: PSF subtraction, signal extraction, and SNR estimation.
+coronalyze is the analysis companion to coronagraphoto. It handles post-processing—everything that happens after the photons hit the detector: PSF subtraction, signal extraction, and SNR estimation.
 
 This document covers the conceptual foundation, implementation details, and practical usage.
 
@@ -11,7 +11,7 @@ This document covers the conceptual foundation, implementation details, and prac
 The HWO simulation ecosystem separates **image generation** from **image analysis**:
 
 - **coronagraphoto** simulates the physics: light propagation, coronagraph PSFs (via yippy), detector noise, zodiacal backgrounds.
-- **coronablink** does the math: PCA subtraction, aperture photometry, detection statistics.
+- **coronalyze** does the math: PCA subtraction, aperture photometry, detection statistics.
 
 This boundary keeps the simulation agnostic to downstream analysis choices, and lets the analysis code run on any image—synthetic or real.
 
@@ -21,7 +21,7 @@ This boundary keeps the simulation agnostic to downstream analysis choices, and 
 
 ### JAX-Native Design
 
-Everything in coronablink runs through JAX. That means:
+Everything in coronalyze runs through JAX. That means:
 
 1. **JIT Compilation**: Functions compile to XLA and run on CPU or GPU with no code changes.
 2. **Differentiability**: You can backpropagate through the entire pipeline. This enables gradient-based optimization of coronagraph masks, observer integration times, or orbital parameters.
@@ -29,7 +29,7 @@ Everything in coronablink runs through JAX. That means:
 
 ### SNR Estimation
 
-coronablink implements the **Mawet et al. (2014)** method for signal-to-noise estimation:
+coronalyze implements the **Mawet et al. (2014)** method for signal-to-noise estimation:
 
 - Places discrete apertures around the target separation
 - Applies Small-Sample Statistics corrections
@@ -44,7 +44,7 @@ Use it when you need to publish a detection significance or compare with communi
 ### Package Layout
 
 ```
-coronablink/
+coronalyze/
 ├── core/          # Low-level JAX primitives
 │   ├── geometry.py      # Radial distances, aperture coordinates
 │   ├── photometry.py    # Convolution kernels, flux maps
@@ -88,7 +88,7 @@ The `snr()` function implements this pattern. 100 candidates run in roughly the 
 ### Basic SNR Calculation
 
 ```python
-from coronablink import snr
+from coronalyze import snr
 import jax.numpy as jnp
 
 # Your post-processed residual image
@@ -108,7 +108,7 @@ snr_values = snr(residual, positions, fwhm)
 For mission simulations, use the subtraction primitives:
 
 ```python
-from coronablink import subtract_star, subtract_disk, snr
+from coronalyze import subtract_star, subtract_disk, snr
 import jax.numpy as jnp
 
 # From coronagraphoto
@@ -132,7 +132,7 @@ snr_values = snr(residual, positions, fwhm=3.5)
 For iterative pipelines, use the `snr_estimator()` factory:
 
 ```python
-from coronablink import snr_estimator
+from coronalyze import snr_estimator
 import jax
 
 # Pre-compute aperture kernel once
@@ -146,7 +146,7 @@ def process_cube(images, positions):
 
 ### Integration with coronagraphoto
 
-coronablink takes plain JAX arrays. It doesn't require coronagraphoto objects:
+coronalyze takes plain JAX arrays. It doesn't require coronagraphoto objects:
 
 ```python
 # If you have a DetectorReadout object:
@@ -156,7 +156,7 @@ image = readout.rate  # or readout.readout for counts
 snr_values = snr(image, positions, fwhm)
 ```
 
-This means you can use coronablink on testbed data, archival observations, or outputs from other simulators—anything that gives you a 2D array.
+This means you can use coronalyze on testbed data, archival observations, or outputs from other simulators—anything that gives you a 2D array.
 
 ---
 

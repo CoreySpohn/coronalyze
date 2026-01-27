@@ -10,8 +10,8 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronablink.core.matched_filter import matched_filter_snr
-from coronablink.core.snr import snr
+from coronalyze.core.matched_filter import matched_filter_snr
+from coronalyze.core.snr import snr
 
 
 class TestSNRGradients:

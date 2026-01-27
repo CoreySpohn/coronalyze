@@ -1,7 +1,7 @@
-"""Data management utilities for coronablink.
+"""Data management utilities for coronalyze.
 
 This module provides utilities for managing and accessing example data files
-used by coronablink. It uses pooch to handle data downloads and caching.
+used by coronalyze. It uses pooch to handle data downloads and caching.
 """
 
 import pooch
@@ -13,10 +13,10 @@ REGISTRY = {
     "scenes.zip": "md5:c777aefb65887249892093b1aba6d86a",
 }
 
-# Create a pooch instance for coronablink example data
+# Create a pooch instance for coronalyze example data
 PIKACHU = pooch.create(
-    path=pooch.os_cache("coronablink"),
-    base_url="https://github.com/CoreySpohn/coronablink/raw/main/data/",
+    path=pooch.os_cache("coronalyze"),
+    base_url="https://github.com/CoreySpohn/coronalyze/raw/main/data/",
     registry=REGISTRY,
 )
 

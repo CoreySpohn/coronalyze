@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronablink.core.pca import get_pca_basis, pca_subtract
+from coronalyze.core.pca import get_pca_basis, pca_subtract
 
 
 class TestGetPCABasis:

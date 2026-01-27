@@ -13,9 +13,9 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from coronablink.core.image_transforms import resample_flux
-from coronablink.core.modeling import inject_planet, make_simple_disk
-from coronablink.core.pca import get_pca_basis, pca_subtract
+from coronalyze.core.image_transforms import resample_flux
+from coronalyze.core.modeling import inject_planet, make_simple_disk
+from coronalyze.core.pca import get_pca_basis, pca_subtract
 
 # Verification often requires higher precision to validate math identities
 jax.config.update("jax_enable_x64", True)
@@ -35,7 +35,7 @@ class TestPCANumericalAccuracy:
         ref_cube_np = np.random.randn(n_frames, ny, nx)
         n_modes = 5
 
-        # 1. Run coronablink Snapshot PCA (JAX)
+        # 1. Run coronalyze Snapshot PCA (JAX)
         basis_jax, _ = get_pca_basis(jnp.array(ref_cube_np), n_modes)
 
         # 2. Run Standard SVD (NumPy) for ground truth

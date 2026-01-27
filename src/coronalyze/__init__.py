@@ -1,4 +1,4 @@
-"""coronablink: JAX-based post-processing for coronagraphic direct imaging.
+"""coronalyze: JAX-based post-processing for coronagraphic direct imaging.
 
 This library provides analysis tools for coronagraphic observations,
 designed as a companion to coronagraphoto.
@@ -8,18 +8,18 @@ Primary SNR API (Mawet et al. 2014):
     - snr_map(): Generate 2D SNR detection map
     - snr_estimator(): Factory for JIT-ready SNREstimator objects
 
-For experimental matched-filter SNR, see coronablink.core.matched_filter.
+For experimental matched-filter SNR, see coronalyze.core.matched_filter.
 """
 
 # Analysis workflows
-from coronablink.analysis import (
+from coronalyze.analysis import (
     get_perfect_residuals,
     get_photon_noise_map,
     simulate_observation,
 )
 
 # Core primitives
-from coronablink.core import (
+from coronalyze.core import (
     aperture_photometry,
     aperture_solid_angle,
     calculate_n_apertures,
@@ -43,13 +43,13 @@ from coronablink.core import (
 )
 
 # Modeling primitives (including subtraction)
-from coronablink.core.modeling import (
+from coronalyze.core.modeling import (
     subtract_disk,
     subtract_star,
 )
 
 # SNR API (Mawet method)
-from coronablink.core.snr import (
+from coronalyze.core.snr import (
     SNREstimator,
     calculate_ccd_snr,
     exposure_time_for_snr,
@@ -59,10 +59,10 @@ from coronablink.core.snr import (
 )
 
 # Example data (via pooch)
-from coronablink.datasets import fetch_all, fetch_coronagraph, fetch_scene
+from coronalyze.datasets import fetch_all, fetch_coronagraph, fetch_scene
 
 # Yield pipelines (high-level workflows)
-from coronablink.pipelines import (
+from coronalyze.pipelines import (
     calculate_yield_snr,
     klip_subtract,
 )

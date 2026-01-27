@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronablink.core.snr import snr
+from coronalyze.core.snr import snr
 
 
 def make_simple_image(

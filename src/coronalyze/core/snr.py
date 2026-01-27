@@ -11,7 +11,7 @@ Primary API:
 Classes:
     - SNREstimator: Equinox module for efficient batch SNR computation
 
-For experimental matched-filter SNR, see coronablink.core.matched_filter.
+For experimental matched-filter SNR, see coronalyze.core.matched_filter.
 
 Reference: Mawet et al. (2014), ApJ, 792, 97
 """
@@ -22,10 +22,10 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from coronablink.core.geometry import generate_aperture_coords, get_center
-from coronablink.core.map_coordinates import map_coordinates
-from coronablink.core.photometry import flux_map, make_aperture_kernel
-from coronablink.core.statistics import masked_mean, masked_std, small_sample_penalty
+from coronalyze.core.geometry import generate_aperture_coords, get_center
+from coronalyze.core.map_coordinates import map_coordinates
+from coronalyze.core.photometry import flux_map, make_aperture_kernel
+from coronalyze.core.statistics import masked_mean, masked_std, small_sample_penalty
 
 # =============================================================================
 # SNR Estimator Class

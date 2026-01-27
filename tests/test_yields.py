@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronablink.analysis.yields import (
+from coronalyze.analysis.yields import (
     get_perfect_residuals,
     get_photon_noise_map,
     simulate_observation,

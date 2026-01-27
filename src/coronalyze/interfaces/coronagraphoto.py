@@ -6,7 +6,7 @@ Exposure and simulation outputs.
 
 import jax.numpy as jnp
 
-from coronablink.core.snr import snr
+from coronalyze.core.snr import snr
 
 
 def extract_image(detector_readout: jnp.ndarray) -> jnp.ndarray:

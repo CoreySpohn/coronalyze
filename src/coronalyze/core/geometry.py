@@ -67,7 +67,7 @@ def calculate_n_apertures(
         Number of valid reference apertures.
 
     Example:
-        >>> from coronablink.core.geometry import calculate_n_apertures
+        >>> from coronalyze.core.geometry import calculate_n_apertures
         >>> n = calculate_n_apertures(radius=20, fwhm=5.0)
         >>> print(f"{n} reference apertures at r=20px")
     """

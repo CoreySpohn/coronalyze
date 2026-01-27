@@ -7,9 +7,9 @@ Run with: pytest tests/test_validation.py -v
 import jax.numpy as jnp
 import pytest
 
-from coronablink.analysis.yields import get_photon_noise_map
-from coronablink.core.image_transforms import resample_flux
-from coronablink.core.modeling import inject_planet, make_simple_disk
+from coronalyze.analysis.yields import get_photon_noise_map
+from coronalyze.core.image_transforms import resample_flux
+from coronalyze.core.modeling import inject_planet, make_simple_disk
 
 
 class TestRotationDirection:

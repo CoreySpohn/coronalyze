@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronablink.core.image_transforms import (
+from coronalyze.core.image_transforms import (
     ccw_rotation_matrix,
     resample_flux,
     shift_image,

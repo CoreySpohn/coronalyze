@@ -7,8 +7,8 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronablink.core.modeling import subtract_disk, subtract_star
-from coronablink.pipelines import (
+from coronalyze.core.modeling import subtract_disk, subtract_star
+from coronalyze.pipelines import (
     calculate_yield_snr,
     klip_subtract,
 )

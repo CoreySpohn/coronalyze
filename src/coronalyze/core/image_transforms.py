@@ -9,7 +9,7 @@ import functools
 import jax
 import jax.numpy as jnp
 
-from coronablink.core.map_coordinates import map_coordinates
+from coronalyze.core.map_coordinates import map_coordinates
 
 
 def ccw_rotation_matrix(rotation_deg: float) -> jax.Array:

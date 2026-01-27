@@ -5,7 +5,7 @@ Provides high-level workflows for yield estimation:
 - calculate_yield_snr: End-to-end subtraction + SNR calculation
 - klip_subtract: PCA/KLIP PSF subtraction
 
-For subtraction primitives, see coronablink.core.modeling:
+For subtraction primitives, see coronalyze.core.modeling:
 - subtract_star, subtract_disk
 
 All functions are JIT-compiled and differentiable.
@@ -16,9 +16,9 @@ import functools
 import jax
 import jax.numpy as jnp
 
-from coronablink.core.modeling import subtract_disk, subtract_star
-from coronablink.core.pca import get_pca_basis, pca_subtract
-from coronablink.core.snr import snr
+from coronalyze.core.modeling import subtract_disk, subtract_star
+from coronalyze.core.pca import get_pca_basis, pca_subtract
+from coronalyze.core.snr import snr
 
 
 @functools.partial(jax.jit, static_argnames=["n_modes"])

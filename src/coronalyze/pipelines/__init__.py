@@ -4,11 +4,11 @@ High-level workflows:
     - calculate_yield_snr: End-to-end subtraction + SNR calculation
     - klip_subtract: PCA/KLIP PSF subtraction
 
-Subtraction primitives are in coronablink.core.modeling:
+Subtraction primitives are in coronalyze.core.modeling:
     - subtract_star, subtract_disk
 """
 
-from coronablink.pipelines.yield_pipeline import (
+from coronalyze.pipelines.yield_pipeline import (
     calculate_yield_snr,
     klip_subtract,
 )

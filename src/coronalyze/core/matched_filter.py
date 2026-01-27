@@ -4,7 +4,7 @@ This module provides an experimental alternative SNR method using Gaussian
 matched filtering with annulus-based noise estimation. It is provided for
 research comparison but is NOT the standard method.
 
-For production use, prefer the standard Mawet method in coronablink.core.snr.
+For production use, prefer the standard Mawet method in coronalyze.core.snr.
 
 Functions:
     - matched_filter_snr(): Calculate SNR using matched-filter approach
@@ -13,8 +13,8 @@ Functions:
 Classes:
     - MatchedFilterSNREstimator: Equinox module for efficient batch computation
 
-Note: This module is NOT exported from the main coronablink namespace.
-Import directly: from coronablink.core.matched_filter import matched_filter_snr
+Note: This module is NOT exported from the main coronalyze namespace.
+Import directly: from coronalyze.core.matched_filter import matched_filter_snr
 """
 
 import functools
@@ -23,7 +23,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from coronablink.core.map_coordinates import map_coordinates
+from coronalyze.core.map_coordinates import map_coordinates
 
 # =============================================================================
 # Matched Filter SNR Estimator
@@ -41,7 +41,7 @@ class MatchedFilterSNREstimator(eqx.Module):
     Note: For production use, prefer SNREstimator (Mawet method).
 
     Example:
-        >>> from coronablink.core.matched_filter import matched_filter_snr_estimator
+        >>> from coronalyze.core.matched_filter import matched_filter_snr_estimator
         >>> estimator = matched_filter_snr_estimator(fwhm=4.0)
         >>> snrs = estimator(image, positions)
     """

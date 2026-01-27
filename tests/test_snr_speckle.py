@@ -13,8 +13,8 @@ import numpy as np
 import pytest
 from jax.scipy.signal import convolve2d
 
-from coronablink.core.matched_filter import matched_filter_snr
-from coronablink.core.snr import snr
+from coronalyze.core.matched_filter import matched_filter_snr
+from coronalyze.core.snr import snr
 
 
 def make_speckle_noise(shape, fwhm, rng_key):
