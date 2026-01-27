@@ -51,4 +51,6 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".md": "myst-nb",
 }
-nb_execution_mode = "off"
+nb_execution_mode = "auto"  # Execute notebooks without stored outputs
+nb_execution_timeout = 120  # Timeout per cell in seconds
+nb_execution_raise_on_error = True  # Fail build on notebook errors

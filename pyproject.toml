@@ -34,6 +34,8 @@ docs = [
   "sphinx-autoapi",
   "sphinx_autodoc_typehints",
   "ipython",
+  "coronagraphoto",
+  "yippy",
 ]
 test = ["nox", "pytest", "hypothesis", "pytest-cov"]
 
