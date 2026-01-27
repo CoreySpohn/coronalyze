@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/CoreySpohn/coronalyze/compare/v1.0.2...v1.0.3) (2026-01-27)
+
+
+### Bug Fixes
+
+* Version management fix ([35f9175](https://github.com/CoreySpohn/coronalyze/commit/35f9175fc6699c684e5939f68454fbc3184ea1ce))
+
 ## [1.0.2](https://github.com/CoreySpohn/coronalyze/compare/v1.0.1...v1.0.2) (2026-01-27)
 
 
