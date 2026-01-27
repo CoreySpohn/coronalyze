@@ -11,6 +11,10 @@ Primary SNR API (Mawet et al. 2014):
 For experimental matched-filter SNR, see coronalyze.core.matched_filter.
 """
 
+from importlib.metadata import version as _get_version
+
+__version__ = _get_version("coronalyze")
+
 # Analysis workflows
 from coronalyze.analysis import (
     get_perfect_residuals,

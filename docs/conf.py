@@ -1,12 +1,12 @@
 """Sphinx configuration file."""
 
-import coronalyze
+from importlib.metadata import version as get_version
 
 project = "coronalyze"
-copyright = "2024, Corey Spohn"
+copyright = "2026, Corey Spohn"
 author = "Corey Spohn"
-version = coronalyze.__version__
-release = coronalyze.__version__
+release = get_version("coronalyze")
+version = ".".join(release.split(".")[:2])  # e.g. "1.0" from "1.0.1"
 
 # -- General configuration ---------------------------------------------------
 
