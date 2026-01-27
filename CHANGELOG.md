@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.4](https://github.com/CoreySpohn/coronalyze/compare/v1.0.3...v1.0.4) (2026-01-27)
+
+
+### Bug Fixes
+
+* Clean up yippy call ([49b3a8a](https://github.com/CoreySpohn/coronalyze/commit/49b3a8a0def1278a4041c50e68c70268d8be688a))
+* Cleaning out unnecessary dependencies ([ad20c4f](https://github.com/CoreySpohn/coronalyze/commit/ad20c4fcee093233792f7b7ff7de56077266c3c4))
+* Mask out points in the snr_map at small separations where the results are undefined ([d094c88](https://github.com/CoreySpohn/coronalyze/commit/d094c88b71821bcf90a2a801adbf37ec0d069c8a))
+* Updating tests to fix error hopefully ([7c8e139](https://github.com/CoreySpohn/coronalyze/commit/7c8e1399ae7789bd58638f3574cb29e6dcf8b91e))
+
 ## [1.0.3](https://github.com/CoreySpohn/coronalyze/compare/v1.0.2...v1.0.3) (2026-01-27)
 
 
