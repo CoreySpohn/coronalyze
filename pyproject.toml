@@ -7,7 +7,7 @@ name = "coronalyze"
 description = "A JAX-based library for post-processing coronagraphic direct imaging data."
 authors = [{ name = "Corey Spohn", email = "corey.a.spohn@nasa.gov" }]
 dynamic = ['readme', 'version']
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -16,14 +16,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Topic :: Scientific/Engineering :: Astronomy",
 ]
-dependencies = [
-  "equinox",
-  "jax",
-  "jaxlib",
-  "matplotlib>=3.10.8",
-  "numpy",
-  "pooch",
-]
+dependencies = ["equinox", "jax", "jaxlib", "pooch"]
 [project.optional-dependencies]
 coronagraphoto = ["coronagraphoto"]
 dev = ["ruff", "pre-commit"]
@@ -34,6 +27,7 @@ docs = [
   "sphinx-autoapi",
   "sphinx_autodoc_typehints",
   "ipython",
+  "matplotlib",
   "coronagraphoto",
   "yippy",
 ]

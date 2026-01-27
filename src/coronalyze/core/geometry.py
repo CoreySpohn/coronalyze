@@ -71,11 +71,9 @@ def calculate_n_apertures(
         >>> n = calculate_n_apertures(radius=20, fwhm=5.0)
         >>> print(f"{n} reference apertures at r=20px")
     """
-    import numpy as np
-
-    half_angle = np.arcsin(min(fwhm / 2.0 / max(radius, 0.1), 1.0))
+    half_angle = jnp.arcsin(jnp.minimum(fwhm / 2.0 / jnp.maximum(radius, 0.1), 1.0))
     d_theta = 2.0 * half_angle
-    n_theoretical = np.floor(2 * np.pi / max(d_theta, 0.01))
+    n_theoretical = jnp.floor(2 * jnp.pi / jnp.maximum(d_theta, 0.01))
     # Subtract: 1 for planet position + 2*buffer for gap on each side
     n_actual = max(int(n_theoretical - 1 - 2 * exclusion_buffer), 1)
     return n_actual
