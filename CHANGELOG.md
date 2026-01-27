@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/CoreySpohn/coronalyze/compare/v1.0.1...v1.0.2) (2026-01-27)
+
+
+### Bug Fixes
+
+* Revert name back to coronalyze ([8dc5d93](https://github.com/CoreySpohn/coronalyze/commit/8dc5d9368db3dfeb69e7b270c9f6fb959715d5fe))
+
 ## [1.0.1](https://github.com/CoreySpohn/coronalyze/compare/v1.0.0...v1.0.1) (2026-01-26)
 
 
