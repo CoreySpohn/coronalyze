@@ -377,11 +377,16 @@ def _snr_batch_core(
         # Small-sample penalty using actual valid count
         penalty = jnp.sqrt(1 + 1 / jnp.maximum(n_valid, 1.0))
 
-        # SNR (return 0 if fewer than 2 valid apertures)
+        # SNR calculation
         signal = planet_flux - bg_mean
         noise = bg_std * penalty
         snr_val = signal / jnp.maximum(noise, 1e-10)
-        return jnp.where(n_valid >= 2, snr_val, 0.0)
+
+        # Return NaN for unreliable measurements:
+        # - Radius smaller than FWHM (can't fit reference apertures)
+        # - Fewer than 3 valid reference apertures (insufficient statistics)
+        is_valid = (r_pix >= fwhm) & (n_valid >= 3)
+        return jnp.where(is_valid, snr_val, jnp.nan)
 
     return jax.vmap(_single_snr)(positions)
 
