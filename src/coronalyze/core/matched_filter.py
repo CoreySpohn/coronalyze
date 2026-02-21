@@ -22,8 +22,7 @@ import functools
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-
-from coronalyze.core.map_coordinates import map_coordinates
+from hwoutils.map_coordinates import map_coordinates
 
 # =============================================================================
 # Matched Filter SNR Estimator

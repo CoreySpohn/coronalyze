@@ -27,7 +27,6 @@ from coronalyze.core import (
     aperture_photometry,
     aperture_solid_angle,
     calculate_n_apertures,
-    ccw_rotation_matrix,
     circular_aperture_mask,
     flux_map,
     generate_aperture_coords,
@@ -40,8 +39,6 @@ from coronalyze.core import (
     masked_std,
     pca_subtract,
     radial_distance,
-    resample_flux,
-    shift_image,
     small_sample_penalty,
     soft_aperture_mask,
 )
@@ -85,10 +82,6 @@ __all__ = [
     "subtract_disk",
     "klip_subtract",
     "calculate_yield_snr",
-    # Image Transforms
-    "ccw_rotation_matrix",
-    "resample_flux",
-    "shift_image",
     # PCA/KLIP
     "get_pca_basis",
     "pca_subtract",

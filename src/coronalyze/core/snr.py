@@ -21,9 +21,9 @@ import functools
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+from hwoutils.map_coordinates import map_coordinates
 
 from coronalyze.core.geometry import generate_aperture_coords, get_center
-from coronalyze.core.map_coordinates import map_coordinates
 from coronalyze.core.photometry import flux_map, make_aperture_kernel
 from coronalyze.core.statistics import masked_mean, masked_std, small_sample_penalty
 

@@ -6,8 +6,7 @@ Run with: pytest tests/test_image_transforms.py -v
 import jax
 import jax.numpy as jnp
 import pytest
-
-from coronalyze.core.image_transforms import (
+from hwoutils.transforms import (
     ccw_rotation_matrix,
     resample_flux,
     shift_image,

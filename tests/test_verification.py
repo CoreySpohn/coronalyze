@@ -12,8 +12,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+from hwoutils.transforms import resample_flux
 
-from coronalyze.core.image_transforms import resample_flux
 from coronalyze.core.modeling import inject_planet, make_simple_disk
 from coronalyze.core.pca import get_pca_basis, pca_subtract
 
