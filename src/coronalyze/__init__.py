@@ -1,3 +1,4 @@
+# ruff: noqa: RUF022
 """coronalyze: JAX-based post-processing for coronagraphic direct imaging.
 
 This library provides analysis tools for coronagraphic observations,
@@ -92,6 +93,10 @@ __all__ = [
     "get_perfect_residuals",
     "get_photon_noise_map",
     "simulate_observation",
+    # Example data
+    "fetch_all",
+    "fetch_coronagraph",
+    "fetch_scene",
     # Core utilities
     "calculate_n_apertures",
     "flux_map",
