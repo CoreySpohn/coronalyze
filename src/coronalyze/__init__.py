@@ -69,6 +69,9 @@ from coronalyze.pipelines import (
     klip_subtract,
 )
 
+# Post-processing configuration
+from coronalyze.pp_config import PPConfig
+
 __all__ = [
     # SNR Estimator API (Mawet method)
     "snr",
@@ -112,4 +115,6 @@ __all__ = [
     "aperture_solid_angle",
     "circular_aperture_mask",
     "soft_aperture_mask",
+    # Post-processing configuration
+    "PPConfig",
 ]
