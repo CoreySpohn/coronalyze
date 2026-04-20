@@ -6,7 +6,6 @@ for optimization applications.
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.core.snr import snr
 
@@ -118,6 +117,6 @@ class TestGradients:
         new_loss = loss_fn(new_image)
 
         # Loss should decrease (SNR should increase)
-        assert (
-            new_loss < initial_loss
-        ), f"Gradient step should reduce loss: {initial_loss} -> {new_loss}"
+        assert new_loss < initial_loss, (
+            f"Gradient step should reduce loss: {initial_loss} -> {new_loss}"
+        )

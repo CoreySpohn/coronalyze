@@ -5,7 +5,6 @@ expected behavior.
 """
 
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.core.snr import snr
 
@@ -82,9 +81,9 @@ class TestMawetSNR:
         y = jnp.array(mean_snrs) - jnp.mean(jnp.array(mean_snrs))
         slope = jnp.sum(x * y) / jnp.sum(x * x)
 
-        assert (
-            slope > 0
-        ), f"SNR should increase with flux. slope={slope}, mean_snrs={mean_snrs}"
+        assert slope > 0, (
+            f"SNR should increase with flux. slope={slope}, mean_snrs={mean_snrs}"
+        )
 
     def test_snr_at_different_radii(self):
         """SNR penalty should be stronger at small radii (fewer apertures)."""

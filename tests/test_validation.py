@@ -5,7 +5,6 @@ Run with: pytest tests/test_validation.py -v
 """
 
 import jax.numpy as jnp
-import pytest
 from hwoutils.transforms import resample_flux
 
 from coronalyze.analysis.yields import get_photon_noise_map
@@ -87,9 +86,9 @@ class TestDiskOrientation:
         var_x = jnp.sum(disk * (x - center) ** 2) / total
 
         # If PA=0 is North (vertical), variance in Y > variance in X
-        assert (
-            var_y > var_x
-        ), f"PA=0 produced horizontal disk (var_y={var_y:.1f}, var_x={var_x:.1f})"
+        assert var_y > var_x, (
+            f"PA=0 produced horizontal disk (var_y={var_y:.1f}, var_x={var_x:.1f})"
+        )
 
     def test_pa_90_is_east(self):
         """PA=90 should produce a horizontal (East-West) disk."""
@@ -105,9 +104,9 @@ class TestDiskOrientation:
         var_x = jnp.sum(disk * (x - center) ** 2) / total
 
         # If PA=90 is East (horizontal), variance in X > variance in Y
-        assert (
-            var_x > var_y
-        ), f"PA=90 produced vertical disk (var_y={var_y:.1f}, var_x={var_x:.1f})"
+        assert var_x > var_y, (
+            f"PA=90 produced vertical disk (var_y={var_y:.1f}, var_x={var_x:.1f})"
+        )
 
 
 class TestNoiseMapUnits:

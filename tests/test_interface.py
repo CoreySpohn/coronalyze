@@ -1,7 +1,6 @@
 """Tests for the coronagraphoto interface module."""
 
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.interfaces.coronagraphoto import (
     analyze_observation,
