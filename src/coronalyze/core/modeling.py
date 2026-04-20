@@ -19,7 +19,7 @@ def inject_planet(
     pos: tuple[float, float],
     order: int = 3,
 ) -> jnp.ndarray:
-    """Inject a fake planet into an image using cubic spline shifts.
+    """Inject a fake planet into an image with sub-pixel precision.
 
     The PSF template is shifted from the image center to the target position
     with sub-pixel precision, scaled by the flux, and added to the image.
@@ -29,7 +29,8 @@ def inject_planet(
         psf_template: 2D PSF template centered at image center, same shape as image.
         flux: Flux scaling factor for the injected planet.
         pos: Target position (y, x) in pixels.
-        order: Interpolation order for sub-pixel shifting (default: 3 = cubic).
+        order: Interpolation order for sub-pixel shifting. Default 3 uses
+            the Keys cubic convolution kernel.
 
     Returns:
         Image with injected planet, same shape as input.
