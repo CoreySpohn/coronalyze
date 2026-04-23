@@ -75,7 +75,7 @@ class TestSNRPhysics:
         assert 1.8 < ratio < 2.2, f"Linearity broken: ratio={ratio:.3f}, expected ~2.0"
 
     def test_white_noise_calibration(self):
-        """Matched-filter and Mawet SNR should agree within expected bounds in white noise."""
+        """MF and Mawet SNR should agree within expected bounds in white noise."""
         flux = 500.0
         noise_sigma = 10.0
 
@@ -92,7 +92,7 @@ class TestSNRPhysics:
         )
 
     def test_empty_field_matched_filter_snr(self):
-        """Matched-filter SNR on pure noise should have std ≈ 1.0 (calibrated false positive rate)."""
+        """Matched-filter SNR on pure noise should have std ~1.0 (calibrated FPR)."""
         n_trials = 500
         rng = jax.random.PRNGKey(3)
         noise_img = jax.random.normal(rng, (200, 200))
@@ -113,7 +113,7 @@ class TestSNRPhysics:
         assert 0.7 < mf_std < 1.5, f"Matched-filter SNR std={mf_std:.3f}, expected ~1.0"
 
     def test_empty_field_mawet_snr(self):
-        """Mawet SNR on pure noise should have std ≈ 1.0 (calibrated false positive rate)."""
+        """Mawet SNR on pure noise should have std ~1.0 (calibrated FPR)."""
         n_trials = 500
         rng = jax.random.PRNGKey(4)
         noise_img = jax.random.normal(rng, (200, 200))

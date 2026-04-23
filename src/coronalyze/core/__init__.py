@@ -1,3 +1,4 @@
+# ruff: noqa: RUF022
 """Core JAX-based analysis primitives for coronalyze.
 
 This module contains pure JAX mathematical functions with no external dependencies.

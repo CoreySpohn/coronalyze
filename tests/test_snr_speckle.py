@@ -69,7 +69,7 @@ class TestSNRSpeckle:
         assert mf_std < 10.0, f"Matched-filter SNR std={mf_std:.3f}, unexpectedly high"
 
     def test_mawet_snr_in_speckle_noise(self):
-        """Mawet SNR should be more robust to speckle correlations than matched-filter."""
+        """Mawet SNR should be more robust to speckle correlations than MF."""
         n_trials = 300
         rng = jax.random.PRNGKey(42)
         speckle_img = make_speckle_noise((200, 200), self.fwhm, rng)
