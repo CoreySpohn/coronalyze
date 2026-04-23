@@ -10,7 +10,6 @@ Run with: pytest tests/test_snr_speckle.py -v
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 from jax.scipy.signal import convolve2d
 
 from coronalyze.core.matched_filter import matched_filter_snr

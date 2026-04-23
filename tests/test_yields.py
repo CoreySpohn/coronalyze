@@ -5,7 +5,6 @@ Run with: pytest tests/test_yields.py -v
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.analysis.yields import (
     get_perfect_residuals,

@@ -14,6 +14,6 @@ from coronalyze.pipelines.yield_pipeline import (
 )
 
 __all__ = [
-    "klip_subtract",
     "calculate_yield_snr",
+    "klip_subtract",
 ]
