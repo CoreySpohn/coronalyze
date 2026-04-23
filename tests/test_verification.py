@@ -11,7 +11,6 @@ Run with: pytest tests/test_verification.py -v
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 from hwoutils.transforms import resample_flux
 
 from coronalyze.core.modeling import inject_planet, make_simple_disk
@@ -51,9 +50,9 @@ class TestPCANumericalAccuracy:
         # We check that the absolute correlation is ~1.0.
         for i in range(n_modes):
             dot_prod = jnp.dot(basis_jax[i], basis_svd[i])
-            assert (
-                jnp.abs(jnp.abs(dot_prod) - 1.0) < 1e-5
-            ), f"Mode {i} mismatch. Correlation: {dot_prod}"
+            assert jnp.abs(jnp.abs(dot_prod) - 1.0) < 1e-5, (
+                f"Mode {i} mismatch. Correlation: {dot_prod}"
+            )
 
 
 class TestCoordinateConsistency:

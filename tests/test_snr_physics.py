@@ -12,7 +12,6 @@ Run with: pytest tests/test_snr_physics.py -v
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from coronalyze.core.matched_filter import matched_filter_snr
 from coronalyze.core.snr import snr
@@ -52,7 +51,7 @@ class TestSNRPhysics:
         snr_bg = float(matched_filter_snr(img_bg, self.pos, self.fwhm)[0])
 
         rel_diff = abs(snr_clean - snr_bg) / max(abs(snr_clean), 1e-10)
-        assert rel_diff < 0.01, f"SNR changed by {rel_diff*100:.2f}% with background"
+        assert rel_diff < 0.01, f"SNR changed by {rel_diff * 100:.2f}% with background"
 
     def test_linearity(self):
         """SNR should scale linearly with flux (double flux = double SNR)."""
@@ -88,9 +87,9 @@ class TestSNRPhysics:
         m_snr = float(snr(img, self.pos, self.fwhm)[0])
 
         ratio = mf_snr / m_snr
-        assert (
-            0.8 <= ratio <= 2.0
-        ), f"MatchedFilter/Mawet ratio={ratio:.2f}, expected 0.8-2.0"
+        assert 0.8 <= ratio <= 2.0, (
+            f"MatchedFilter/Mawet ratio={ratio:.2f}, expected 0.8-2.0"
+        )
 
     def test_empty_field_matched_filter_snr(self):
         """Matched-filter SNR on pure noise should have std ≈ 1.0 (calibrated false positive rate)."""

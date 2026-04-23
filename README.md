@@ -67,4 +67,3 @@ Like its companion `coronagraphoto`, `coronalyze` provides **primitives** rather
 ## Documentation
 
 Full documentation is available at [coronalyze.readthedocs.io](https://coronalyze.readthedocs.io).
-
