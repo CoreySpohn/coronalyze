@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/CoreySpohn/coronalyze/compare/v1.0.4...v1.1.0) (2026-04-23)
+
+
+### Features
+
+* **pp:** add PPConfig post-processing module ([5568d51](https://github.com/CoreySpohn/coronalyze/commit/5568d51a39ba68e5d1f55289f18920bc71479014))
+
 ## [1.0.4](https://github.com/CoreySpohn/coronalyze/compare/v1.0.3...v1.0.4) (2026-01-27)
 
 
