@@ -11,7 +11,6 @@ Run with: pytest tests/test_verification.py -v
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 from hwoutils.transforms import resample_flux
 
 from coronalyze.core.modeling import inject_planet, make_simple_disk
@@ -51,9 +50,9 @@ class TestPCANumericalAccuracy:
         # We check that the absolute correlation is ~1.0.
         for i in range(n_modes):
             dot_prod = jnp.dot(basis_jax[i], basis_svd[i])
-            assert (
-                jnp.abs(jnp.abs(dot_prod) - 1.0) < 1e-5
-            ), f"Mode {i} mismatch. Correlation: {dot_prod}"
+            assert jnp.abs(jnp.abs(dot_prod) - 1.0) < 1e-5, (
+                f"Mode {i} mismatch. Correlation: {dot_prod}"
+            )
 
 
 class TestCoordinateConsistency:
@@ -67,7 +66,8 @@ class TestCoordinateConsistency:
         """
         shape = (101, 101)
 
-        # 1. Generate Vertical Disk (PA=0) and rotate 90 deg (effectively -90 coord rotation)
+        # 1. Generate Vertical Disk (PA=0) and rotate 90 deg
+        # (effectively -90 coord rotation)
         disk_north = make_simple_disk(
             shape, radius=30, inclination_deg=80, width=5, pa_deg=0
         )
@@ -116,7 +116,7 @@ class TestEndToEndPhysics:
     """Verify scientific fidelity (RDI Throughput) and Differentiability."""
 
     def test_rdi_signal_preservation(self):
-        """Verify PCA does not subtract a planet if it's absent from the reference library (RDI)."""
+        """Verify PCA preserves a planet absent from the reference library (RDI)."""
         ny, nx = 31, 31
         n_frames = 50
 
@@ -139,7 +139,7 @@ class TestEndToEndPhysics:
         residual = pca_subtract(science_image, basis, mean_ref)
 
         # Measure Flux in Residual (Aperture Photometry)
-        # In RDI, the planet is orthogonal to the reference noise, so it should be preserved.
+        # In RDI, the planet is orthogonal to the reference noise, so it is preserved.
         y, x = jnp.indices((ny, nx))
         dist = jnp.sqrt((y - 15.0) ** 2 + (x - 20.0) ** 2)
         aperture_flux = jnp.sum(residual * (dist < 2.0))

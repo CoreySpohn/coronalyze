@@ -8,7 +8,6 @@ Run with: pytest tests/test_snr_gradients.py -v
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.core.matched_filter import matched_filter_snr
 from coronalyze.core.snr import snr

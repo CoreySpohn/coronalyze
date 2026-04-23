@@ -5,7 +5,6 @@ Run with: pytest tests/test_yields.py -v
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.analysis.yields import (
     get_perfect_residuals,
@@ -115,11 +114,8 @@ class TestSimulateObservation:
             )
         )(keys)
 
-        # Variance of Poisson should equal mean
-        mean_obs = jnp.mean(observations)
-        var_obs = jnp.var(observations)
-
         # For Poisson in rate units: var = mean / exposure_time
+        var_obs = jnp.var(observations)
         expected_var = background_rate / exposure_time
         assert jnp.abs(var_obs - expected_var) / expected_var < 0.2
 

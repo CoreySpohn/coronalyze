@@ -12,7 +12,6 @@ Run with: pytest tests/test_snr_physics.py -v
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from coronalyze.core.matched_filter import matched_filter_snr
 from coronalyze.core.snr import snr
@@ -52,7 +51,7 @@ class TestSNRPhysics:
         snr_bg = float(matched_filter_snr(img_bg, self.pos, self.fwhm)[0])
 
         rel_diff = abs(snr_clean - snr_bg) / max(abs(snr_clean), 1e-10)
-        assert rel_diff < 0.01, f"SNR changed by {rel_diff*100:.2f}% with background"
+        assert rel_diff < 0.01, f"SNR changed by {rel_diff * 100:.2f}% with background"
 
     def test_linearity(self):
         """SNR should scale linearly with flux (double flux = double SNR)."""
@@ -76,7 +75,7 @@ class TestSNRPhysics:
         assert 1.8 < ratio < 2.2, f"Linearity broken: ratio={ratio:.3f}, expected ~2.0"
 
     def test_white_noise_calibration(self):
-        """Matched-filter and Mawet SNR should agree within expected bounds in white noise."""
+        """MF and Mawet SNR should agree within expected bounds in white noise."""
         flux = 500.0
         noise_sigma = 10.0
 
@@ -88,12 +87,12 @@ class TestSNRPhysics:
         m_snr = float(snr(img, self.pos, self.fwhm)[0])
 
         ratio = mf_snr / m_snr
-        assert (
-            0.8 <= ratio <= 2.0
-        ), f"MatchedFilter/Mawet ratio={ratio:.2f}, expected 0.8-2.0"
+        assert 0.8 <= ratio <= 2.0, (
+            f"MatchedFilter/Mawet ratio={ratio:.2f}, expected 0.8-2.0"
+        )
 
     def test_empty_field_matched_filter_snr(self):
-        """Matched-filter SNR on pure noise should have std ≈ 1.0 (calibrated false positive rate)."""
+        """Matched-filter SNR on pure noise should have std ~1.0 (calibrated FPR)."""
         n_trials = 500
         rng = jax.random.PRNGKey(3)
         noise_img = jax.random.normal(rng, (200, 200))
@@ -114,7 +113,7 @@ class TestSNRPhysics:
         assert 0.7 < mf_std < 1.5, f"Matched-filter SNR std={mf_std:.3f}, expected ~1.0"
 
     def test_empty_field_mawet_snr(self):
-        """Mawet SNR on pure noise should have std ≈ 1.0 (calibrated false positive rate)."""
+        """Mawet SNR on pure noise should have std ~1.0 (calibrated FPR)."""
         n_trials = 500
         rng = jax.random.PRNGKey(4)
         noise_img = jax.random.normal(rng, (200, 200))

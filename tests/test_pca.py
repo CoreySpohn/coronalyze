@@ -5,7 +5,6 @@ Run with: pytest tests/test_pca.py -v
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from coronalyze.core.pca import get_pca_basis, pca_subtract
 
@@ -54,7 +53,7 @@ class TestGetPCABasis:
         ref_cube = jax.random.normal(jax.random.PRNGKey(3), (n_frames, ny, nx))
 
         # Should not crash - modes get clipped by eigendecomposition
-        basis, mean_ref = get_pca_basis(ref_cube, min(n_modes, n_frames - 1))
+        basis, _mean_ref = get_pca_basis(ref_cube, min(n_modes, n_frames - 1))
         assert basis.shape[0] <= n_frames
 
 
