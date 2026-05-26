@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/CoreySpohn/coronalyze/compare/v1.1.0...v1.1.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* upstream API updates ([41b04d5](https://github.com/CoreySpohn/coronalyze/commit/41b04d58f1dbaa4a66da57a9c16a3353a8189bc6))
+
 ## [1.1.0](https://github.com/CoreySpohn/coronalyze/compare/v1.0.4...v1.1.0) (2026-04-23)
 
 
