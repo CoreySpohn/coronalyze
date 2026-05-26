@@ -1,7 +1,7 @@
 """Interface for coronagraphoto simulation outputs.
 
 Provides adapters to extract analysis-ready data from coronagraphoto
-Exposure and simulation outputs.
+ExposureConfig and simulation outputs.
 """
 
 import jax.numpy as jnp

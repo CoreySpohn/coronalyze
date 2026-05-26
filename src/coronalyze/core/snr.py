@@ -397,7 +397,7 @@ def _snr_batch_core(
 def calculate_ccd_snr(
     signal: float,
     background_noise: float,
-    read_noise: float = 0.0,
+    read_noise_e: float = 0.0,
     dark_current: float = 0.0,
 ) -> float:
     """Calculate signal-to-noise ratio using the CCD equation.
@@ -416,13 +416,13 @@ def calculate_ccd_snr(
     Args:
         signal: Source signal in electrons.
         background_noise: Background noise in electrons (from sky, zodi, etc.).
-        read_noise: Read noise in electrons (per pixel, summed over aperture).
+        read_noise_e: Read noise in electrons (per pixel, summed over aperture).
         dark_current: Dark current in electrons (summed over aperture).
 
     Returns:
         Signal-to-noise ratio.
     """
-    variance = signal + background_noise + read_noise**2 + dark_current
+    variance = signal + background_noise + read_noise_e**2 + dark_current
     return signal / jnp.sqrt(variance)
 
 
@@ -430,7 +430,7 @@ def exposure_time_for_snr(
     target_snr: float,
     signal_rate: float,
     background_rate: float,
-    read_noise: float = 0.0,
+    read_noise_e: float = 0.0,
     dark_rate: float = 0.0,
 ) -> float:
     """Calculate exposure time needed to achieve a target SNR.
@@ -444,7 +444,7 @@ def exposure_time_for_snr(
         target_snr: Desired signal-to-noise ratio.
         signal_rate: Source signal rate in electrons/second.
         background_rate: Background rate in electrons/second.
-        read_noise: Read noise in electrons (constant, not per second).
+        read_noise_e: Read noise in electrons (constant, not per second).
         dark_rate: Dark current rate in electrons/second.
 
     Returns:
@@ -452,7 +452,7 @@ def exposure_time_for_snr(
     """
     a = signal_rate**2
     b = -(target_snr**2) * (signal_rate + background_rate + dark_rate)
-    c = -(target_snr**2) * read_noise**2
+    c = -(target_snr**2) * read_noise_e**2
 
     # Quadratic formula (take positive root)
     discriminant = b**2 - 4 * a * c

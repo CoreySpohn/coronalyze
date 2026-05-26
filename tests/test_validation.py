@@ -116,8 +116,8 @@ class TestNoiseMapUnits:
         """Rate=100 e/s, t=1s, RN=0 => sigma=10 e/s."""
         sigma = get_photon_noise_map(
             expectation_rate=jnp.array([[100.0]]),
-            exposure_time=1.0,
-            read_noise=0.0,
+            exposure_time_s=1.0,
+            read_noise_e=0.0,
         )
         assert jnp.isclose(sigma[0, 0], 10.0)
 
@@ -125,8 +125,8 @@ class TestNoiseMapUnits:
         """Rate=0, t=10s, RN=10e => sigma=1 e/s (RN dominates)."""
         sigma = get_photon_noise_map(
             expectation_rate=jnp.array([[0.0]]),
-            exposure_time=10.0,
-            read_noise=10.0,
+            exposure_time_s=10.0,
+            read_noise_e=10.0,
         )
         # sqrt(0 + 100) / 10 = 1
         assert jnp.isclose(sigma[0, 0], 1.0)
@@ -135,8 +135,8 @@ class TestNoiseMapUnits:
         """Longer exposure should reduce noise in rate units."""
         rate = jnp.array([[100.0]])
 
-        sigma_1s = get_photon_noise_map(rate, exposure_time=1.0)
-        sigma_100s = get_photon_noise_map(rate, exposure_time=100.0)
+        sigma_1s = get_photon_noise_map(rate, exposure_time_s=1.0)
+        sigma_100s = get_photon_noise_map(rate, exposure_time_s=100.0)
 
         # sqrt(100*1)/1 = 10, sqrt(100*100)/100 = 1
         assert jnp.isclose(sigma_1s[0, 0], 10.0)

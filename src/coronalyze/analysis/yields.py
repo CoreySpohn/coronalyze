@@ -31,8 +31,8 @@ def get_perfect_residuals(
 
 def get_photon_noise_map(
     expectation_rate: jnp.ndarray,
-    exposure_time: float,
-    read_noise: float = 0.0,
+    exposure_time_s: float,
+    read_noise_e: float = 0.0,
 ) -> jnp.ndarray:
     """Calculate the theoretical 1-sigma noise map in rate units.
 
@@ -43,25 +43,25 @@ def get_photon_noise_map(
 
     Args:
         expectation_rate: Expected count rate image (counts/sec).
-        exposure_time: Integration time in seconds.
-        read_noise: Read noise in electrons (per pixel). Default 0.
+        exposure_time_s: Integration time in seconds.
+        read_noise_e: Read noise in electrons (per pixel). Default 0.
 
     Returns:
         1-sigma noise map in rate units (counts/sec), same shape as input.
     """
     # Convert rate to counts for proper Poisson statistics
-    total_counts = jnp.maximum(expectation_rate, 0.0) * exposure_time
+    total_counts = jnp.maximum(expectation_rate, 0.0) * exposure_time_s
     # Variance in counts: Poisson variance + read noise^2
-    variance_counts = total_counts + read_noise**2
+    variance_counts = total_counts + read_noise_e**2
     # Convert back to rate units
     sigma_counts = jnp.sqrt(variance_counts)
-    return sigma_counts / exposure_time
+    return sigma_counts / exposure_time_s
 
 
 def simulate_observation(
     clean_signal: jnp.ndarray,
     background_model: jnp.ndarray,
-    exposure_time: float = 1.0,
+    exposure_time_s: float = 1.0,
     rng_key: jax.Array = None,
 ) -> jnp.ndarray:
     """Generate a noisy realization of the scene for yield tests.
@@ -72,7 +72,7 @@ def simulate_observation(
     Args:
         clean_signal: Planet image (counts/sec).
         background_model: Star + Disk expectation (counts/sec).
-        exposure_time: Integration time (seconds).
+        exposure_time_s: Integration time (seconds).
         rng_key: JAX PRNG Key. If None, uses key 0.
 
     Returns:
@@ -83,10 +83,10 @@ def simulate_observation(
         rng_key = jax.random.PRNGKey(0)
 
     # Total rate
-    total_flux = (clean_signal + background_model) * exposure_time
+    total_flux = (clean_signal + background_model) * exposure_time_s
 
     # Poisson draw (expects non-negative rates)
     counts = jax.random.poisson(rng_key, jnp.maximum(total_flux, 0.0))
 
     # Return to rate units
-    return counts / exposure_time
+    return counts / exposure_time_s
