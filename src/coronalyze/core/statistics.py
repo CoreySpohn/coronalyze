@@ -5,6 +5,7 @@ small-sample penalty for high-contrast imaging SNR calculations.
 """
 
 import jax.numpy as jnp
+from jax.scipy.special import betainc
 
 
 def masked_mean(values: jnp.ndarray, mask: jnp.ndarray) -> float:
@@ -65,3 +66,28 @@ def small_sample_penalty(n: int | jnp.ndarray) -> float:
         Correction factor sqrt(1 + 1/n).
     """
     return jnp.sqrt(1 + 1 / jnp.maximum(n, 1.0))
+
+
+def student_t_sf(t: jnp.ndarray, df: jnp.ndarray) -> jnp.ndarray:
+    """Upper-tail probability P(T > t) for the Student-t distribution.
+
+    Computed via the regularized incomplete beta function,
+        P(T > t) = 0.5 * I_{df / (df + t^2)}(df / 2, 1 / 2)   for t >= 0,
+    and 1 minus that for t < 0. This is the false positive fraction of a
+    t-distributed detection statistic (Mawet et al. 2014, two-sample t-test
+    with n - 1 degrees of freedom).
+
+    Args:
+        t: Test statistic value(s).
+        df: Degrees of freedom (positive). Non-positive values yield NaN.
+
+    Returns:
+        Elementwise survival probability, NaN where df <= 0 or t is NaN.
+    """
+    t = jnp.asarray(t, dtype=jnp.result_type(float))
+    df = jnp.asarray(df, dtype=jnp.result_type(float))
+    safe_df = jnp.maximum(df, 1e-6)
+    x = safe_df / (safe_df + t**2)
+    tail = 0.5 * betainc(safe_df / 2.0, 0.5, x)
+    sf = jnp.where(t >= 0, tail, 1.0 - tail)
+    return jnp.where(df > 0, sf, jnp.nan)
