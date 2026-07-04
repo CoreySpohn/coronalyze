@@ -101,3 +101,44 @@ class FrameSet(eqx.Module):
     def coadd(self) -> jnp.ndarray:
         """Exposure-weighted coadd: total electrons / total time, (ny, nx) e-/s."""
         return jnp.sum(self.frames, axis=0) / jnp.sum(self.exposure_time_s)
+
+
+class DetectionStats(eqx.Module):
+    """Per-candidate detection statistics produced by a post-processing arm.
+
+    Every arm reports both the raw test statistic and its false positive
+    fraction (FPF) under that arm's own null distribution, so downstream
+    consumers can threshold on probability rather than raw sigma (a fixed
+    sigma threshold is not a fixed false-alarm probability; Mawet et al.
+    2014).
+
+    Attributes:
+        positions_yx: (n, 2) candidate positions, (y, x) pixels.
+        statistic: (n,) test statistic values (NaN where unmeasurable).
+        fpf: (n,) false positive fraction of each statistic under the arm's
+            null distribution (NaN where the statistic is NaN).
+        dof: (n,) effective degrees of freedom backing each statistic's null
+            (t-tests: number of reference samples minus one).
+        fwhm_px: Scalar resolution element used, pixels.
+        statistic_kind: Static label of the statistic/null pairing, e.g.
+            "mawet_t".
+    """
+
+    positions_yx: jnp.ndarray = eqx.field(converter=_asarray)
+    statistic: jnp.ndarray = eqx.field(converter=_asarray)
+    fpf: jnp.ndarray = eqx.field(converter=_asarray)
+    dof: jnp.ndarray = eqx.field(converter=_asarray)
+    fwhm_px: jnp.ndarray = eqx.field(converter=_asarray)
+    statistic_kind: str = eqx.field(static=True)
+
+    def __check_init__(self):
+        """Validate that field shapes are mutually consistent."""
+        if self.positions_yx.ndim != 2 or self.positions_yx.shape[-1] != 2:
+            raise ValueError(
+                f"positions_yx must be (n, 2); got {self.positions_yx.shape}"
+            )
+        n = self.positions_yx.shape[0]
+        for name in ("statistic", "fpf", "dof"):
+            value = getattr(self, name)
+            if value.shape != (n,):
+                raise ValueError(f"{name} must have shape ({n},); got {value.shape}")

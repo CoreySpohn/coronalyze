@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from coronalyze.contracts import FrameSet
+from coronalyze.contracts import DetectionStats, FrameSet
 
 
 def make_frameset(n_frames=3, ny=8, nx=8, **overrides):
@@ -109,3 +109,54 @@ def test_frameset_equinox_partition_roundtrip():
     params, static = eqx.partition(fs, eqx.is_array)
     rebuilt = eqx.combine(params, static)
     assert jnp.array_equal(rebuilt.frames, fs.frames)
+
+
+def make_stats(n=4, **overrides):
+    """Build a DetectionStats with valid defaults, applying any overrides."""
+    kwargs = dict(
+        positions_yx=jnp.zeros((n, 2)),
+        statistic=jnp.ones((n,)),
+        fpf=jnp.full((n,), 0.05),
+        dof=jnp.full((n,), 10.0),
+        fwhm_px=3.0,
+        statistic_kind="mawet_t",
+    )
+    kwargs.update(overrides)
+    return DetectionStats(**kwargs)
+
+
+def test_detection_stats_constructs():
+    """Test construction with valid fields and correct shape."""
+    stats = make_stats()
+    assert stats.statistic.shape == (4,)
+    assert stats.statistic_kind == "mawet_t"
+
+
+def test_detection_stats_rejects_bad_positions_shape():
+    """Test that positions_yx not (n, 2) raises ValueError."""
+    with pytest.raises(ValueError, match="positions_yx"):
+        make_stats(positions_yx=jnp.zeros((4, 3)))
+
+
+def test_detection_stats_rejects_mismatched_lengths():
+    """Test that per-candidate arrays of wrong length raise ValueError."""
+    with pytest.raises(ValueError, match="statistic"):
+        make_stats(statistic=jnp.ones((3,)))
+
+
+def test_detection_stats_statistic_kind_is_static():
+    """Test that statistic_kind does not appear in JAX tree leaves."""
+    stats = make_stats()
+    leaves = jax.tree_util.tree_leaves(stats)
+    assert all(not isinstance(leaf, str) for leaf in leaves)
+
+
+def test_detection_stats_passes_through_jit():
+    """Test that DetectionStats can be passed through a jitted function."""
+    stats = make_stats()
+
+    @jax.jit
+    def min_fpf(s: DetectionStats):
+        return jnp.min(s.fpf)
+
+    assert float(min_fpf(stats)) == pytest.approx(0.05)
