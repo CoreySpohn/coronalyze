@@ -115,6 +115,39 @@ class SNREstimator(eqx.Module):
         Returns:
             (N,) array of SNR values.
         """
+        snr_vals, _ = _snr_batch_core(
+            image,
+            positions,
+            self.kernel,
+            self.fwhm,
+            self.max_apertures,
+            self.order,
+            self.exclusion_buffer,
+            validity_map,
+        )
+        return snr_vals
+
+    def snr_and_dof(
+        self,
+        image: jnp.ndarray,
+        positions: jnp.ndarray,
+        validity_map: jnp.ndarray | None = None,
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
+        """SNR plus the valid reference-aperture count per position.
+
+        The count is the sample size behind each SNR's noise estimate; the
+        matching t-test degrees of freedom is ``count - 1`` (Mawet et al.
+        2014). Positions flagged NaN in the SNR output still report their
+        (unusable) count.
+
+        Args:
+            image: 2D science image.
+            positions: (N, 2) array of (y, x) coordinates.
+            validity_map: Optional 2D mask (1=valid, 0=invalid).
+
+        Returns:
+            Tuple of ((N,) SNR values, (N,) integer valid-aperture counts).
+        """
         return _snr_batch_core(
             image,
             positions,
@@ -304,7 +337,7 @@ def _snr_batch_core(
     order: int,
     exclusion_buffer: float = 0.5,
     validity_map: jnp.ndarray | None = None,
-) -> jnp.ndarray:
+) -> tuple[jnp.ndarray, jnp.ndarray]:
     """JIT-compiled batch SNR calculation (Mawet method).
 
     Args:
@@ -317,6 +350,9 @@ def _snr_batch_core(
         exclusion_buffer: Angular gap between test and first reference.
         validity_map: Optional 2D mask (1=valid, 0=invalid). Off-chip
             locations automatically get 0 via cval boundary handling.
+
+    Returns:
+        Tuple of (snr values (N,), valid reference-aperture counts (N,)).
     """
     # Compute flux map ONCE
     fmap = flux_map(image, kernel)
@@ -327,7 +363,7 @@ def _snr_batch_core(
     if validity_map is None:
         validity_map = jnp.ones((ny, nx))
 
-    def _single_snr(planet_pos: jnp.ndarray) -> float:
+    def _single_snr(planet_pos: jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
         py, px = planet_pos[0], planet_pos[1]
 
         # Extract planet flux
@@ -384,9 +420,9 @@ def _snr_batch_core(
         # - Radius smaller than FWHM (can't fit reference apertures)
         # - Fewer than 3 valid reference apertures (insufficient statistics)
         is_valid = (r_pix >= fwhm) & (n_valid >= 3)
-        return jnp.where(is_valid, snr_val, jnp.nan)
+        return jnp.where(is_valid, snr_val, jnp.nan), n_valid.astype(int)
 
-    return jax.vmap(_single_snr)(positions)
+    return jax.vmap(_single_snr)(positions)  # -> (snr (N,), n_valid (N,))
 
 
 # =============================================================================
