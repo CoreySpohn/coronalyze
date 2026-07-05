@@ -74,3 +74,18 @@ class TestAnalyzeObservation:
 
         assert jnp.isfinite(snr)
         assert snr > 0
+
+
+def test_seam_contract_names_resolve_at_top_level():
+    """Downstream registries resolve these exact attribute paths by import."""
+    import coronalyze
+
+    for name in (
+        "FrameSet",
+        "DetectionStats",
+        "AbstractPostProcessing",
+        "MawetPostProcessing",
+        "student_t_sf",
+    ):
+        assert hasattr(coronalyze, name), name
+        assert name in coronalyze.__all__, name

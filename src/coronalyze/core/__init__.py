@@ -36,7 +36,12 @@ from coronalyze.core.snr import (
     snr_estimator,
     snr_map,
 )
-from coronalyze.core.statistics import masked_mean, masked_std, small_sample_penalty
+from coronalyze.core.statistics import (
+    masked_mean,
+    masked_std,
+    small_sample_penalty,
+    student_t_sf,
+)
 
 __all__ = [
     # SNR Estimator API (Mawet method)
@@ -71,4 +76,5 @@ __all__ = [
     "masked_mean",
     "masked_std",
     "small_sample_penalty",
+    "student_t_sf",
 ]

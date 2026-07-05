@@ -9,6 +9,8 @@ Primary SNR API (Mawet et al. 2014):
     - snr_map(): Generate 2D SNR detection map
     - snr_estimator(): Factory for JIT-ready SNREstimator objects
 
+Seam contracts: FrameSet -> AbstractPostProcessing.detect -> DetectionStats.
+
 For experimental matched-filter SNR, see coronalyze.core.matched_filter.
 """
 
@@ -22,6 +24,9 @@ from coronalyze.analysis import (
     get_photon_noise_map,
     simulate_observation,
 )
+
+# Seam contract types and the post-processing interface
+from coronalyze.contracts import DetectionStats, FrameSet
 
 # Core primitives
 from coronalyze.core import (
@@ -42,6 +47,7 @@ from coronalyze.core import (
     radial_distance,
     small_sample_penalty,
     soft_aperture_mask,
+    student_t_sf,
 )
 
 # Modeling primitives (including subtraction)
@@ -68,6 +74,7 @@ from coronalyze.pipelines import (
     calculate_yield_snr,
     klip_subtract,
 )
+from coronalyze.postproc import AbstractPostProcessing, MawetPostProcessing
 
 # Post-processing configuration
 from coronalyze.pp_config import PPConfig
@@ -100,6 +107,12 @@ __all__ = [
     "fetch_all",
     "fetch_coronagraph",
     "fetch_scene",
+    # Seam contracts (post-processing interface)
+    "FrameSet",
+    "DetectionStats",
+    "AbstractPostProcessing",
+    "MawetPostProcessing",
+    "student_t_sf",
     # Core utilities
     "calculate_n_apertures",
     "flux_map",
