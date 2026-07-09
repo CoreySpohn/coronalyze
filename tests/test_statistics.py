@@ -169,3 +169,7 @@ class TestGrubbsFpf:
         assert float(grubbs_fpf(jnp.asarray(-0.5), jnp.asarray(n))) == 1.0
         assert jnp.isnan(grubbs_fpf(jnp.asarray(2.0), jnp.asarray(2.0)))
         assert jnp.isnan(grubbs_fpf(jnp.asarray(jnp.nan), jnp.asarray(n)))
+        for n_i in (5.0, 10.0, 12.0, 20.0, 50.0):
+            g_max_i = (n_i - 1.0) / jnp.sqrt(jnp.asarray(n_i))
+            assert float(grubbs_fpf(g_max_i, jnp.asarray(n_i))) == 0.0
+            assert float(grubbs_fpf(g_max_i * 0.9, jnp.asarray(n_i))) > 0.0

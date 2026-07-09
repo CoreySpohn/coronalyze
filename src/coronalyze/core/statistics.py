@@ -174,7 +174,7 @@ def grubbs_fpf(g: jnp.ndarray, n: jnp.ndarray) -> jnp.ndarray:
     t_sq = n * (n - 2.0) * g**2 / jnp.maximum(denom, 1e-10)
     t = jnp.sqrt(jnp.maximum(t_sq, 0.0))
     p = jnp.minimum(n * student_t_sf(t, n - 2.0), 1.0)
-    p = jnp.where(denom > 0, p, 0.0)
+    p = jnp.where(g < (n - 1.0) / jnp.sqrt(n), p, 0.0)
     p = jnp.where(g >= 0, p, 1.0)
     p = jnp.where(n >= 3, p, jnp.nan)
     return jnp.where(jnp.isnan(g), jnp.nan, p)
