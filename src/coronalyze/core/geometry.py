@@ -44,6 +44,34 @@ def radial_distance(
     return jnp.sqrt((y - cy) ** 2 + (x - cx) ** 2)
 
 
+def n_reference_apertures(
+    radius: jnp.ndarray,
+    fwhm: float,
+    exclusion_buffer: float = 0.5,
+) -> jnp.ndarray:
+    """Traceable count of reference apertures at a given radius.
+
+    Identical formula to calculate_n_apertures (Mawet et al. 2014 aperture
+    packing with an exclusion buffer on both sides of the candidate), but
+    expressed in jnp ops end to end so it can be evaluated with a traced
+    radius inside jit/vmap. This is the single source of truth for the
+    count used by the detection samplers.
+
+    Args:
+        radius: Radial distance from center in pixels (may be traced).
+        fwhm: Full width at half maximum in pixels.
+        exclusion_buffer: Gap between candidate and first/last reference
+            aperture in units of angular step.
+
+    Returns:
+        Integer scalar array of valid reference apertures (at least 1).
+    """
+    half_angle = jnp.arcsin(jnp.minimum(fwhm / 2.0 / jnp.maximum(radius, 0.1), 1.0))
+    d_theta = 2.0 * half_angle
+    n_theoretical = jnp.floor(2 * jnp.pi / jnp.maximum(d_theta, 0.01))
+    return jnp.maximum((n_theoretical - 1 - 2 * exclusion_buffer).astype(int), 1)
+
+
 def calculate_n_apertures(
     radius: float,
     fwhm: float,
@@ -72,12 +100,7 @@ def calculate_n_apertures(
         n = calculate_n_apertures(radius=20, fwhm=5.0)
         print(f"{n} reference apertures at r=20px")
     """
-    half_angle = jnp.arcsin(jnp.minimum(fwhm / 2.0 / jnp.maximum(radius, 0.1), 1.0))
-    d_theta = 2.0 * half_angle
-    n_theoretical = jnp.floor(2 * jnp.pi / jnp.maximum(d_theta, 0.01))
-    # Subtract: 1 for planet position + 2*buffer for gap on each side
-    n_actual = max(int(n_theoretical - 1 - 2 * exclusion_buffer), 1)
-    return n_actual
+    return int(n_reference_apertures(radius, fwhm, exclusion_buffer))
 
 
 def generate_aperture_coords(
