@@ -57,6 +57,7 @@ class MawetPostProcessing(AbstractPostProcessing):
     statistic is scale-invariant, so it is computed on the exposure-weighted
     coadd regardless of frame count. References are ignored: the noise sample
     comes from the science image itself.
+    FrameSet.center_yx is ignored: the star is assumed to be at the geometric center.
     """
 
     estimator: SNREstimator

@@ -74,6 +74,8 @@ from coronalyze.pipelines import (
     calculate_yield_snr,
     klip_subtract,
 )
+
+# Post-processing seam (interface + arms)
 from coronalyze.postproc import AbstractPostProcessing, MawetPostProcessing
 
 # Post-processing configuration
