@@ -16,6 +16,7 @@ import functools
 import jax
 import jax.numpy as jnp
 
+from coronalyze.contracts import DetectionStats
 from coronalyze.core.modeling import subtract_disk, subtract_star
 from coronalyze.core.pca import get_pca_basis, pca_subtract
 from coronalyze.core.snr import snr
@@ -68,6 +69,7 @@ def calculate_yield_snr(
     disk_scale: float = 1.0,
     exclusion_buffer: float = 0.5,
     validity_map: jnp.ndarray = None,
+    estimator=None,
 ) -> jnp.ndarray:
     """End-to-end yield SNR calculation.
 
@@ -90,6 +92,12 @@ def calculate_yield_snr(
             of angular step (default 0.5). Prevents PSF wing leakage.
         validity_map: Optional 2D mask (1=valid, 0=invalid) to exclude
             known companions, bad pixels, or edge regions.
+        estimator: Optional detection estimator called as
+            estimator(residual, planet_positions, validity_map). None (the
+            default) uses the frozen Mawet snr() path with the fwhm and
+            exclusion_buffer arguments; an SNREstimator or a composed
+            DetectionEstimator overrides them (its own configuration wins).
+            The return is always the (N,) statistic array.
 
     Returns:
         SNR values for each planet position.
@@ -131,10 +139,15 @@ def calculate_yield_snr(
     if disk_model is not None:
         residual = subtract_disk(residual, disk_model, disk_scale)
 
-    return snr(
-        residual,
-        planet_positions,
-        fwhm,
-        exclusion_buffer=exclusion_buffer,
-        validity_map=validity_map,
-    )
+    if estimator is None:
+        return snr(
+            residual,
+            planet_positions,
+            fwhm,
+            exclusion_buffer=exclusion_buffer,
+            validity_map=validity_map,
+        )
+    result = estimator(residual, planet_positions, validity_map)
+    if isinstance(result, DetectionStats):
+        return result.statistic
+    return result

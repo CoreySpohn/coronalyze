@@ -5,6 +5,7 @@ Run with: pytest tests/test_pipelines.py -v
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pytest
 
 from coronalyze.core.modeling import subtract_disk, subtract_star
@@ -150,3 +151,67 @@ class TestCalculateYieldSNR:
 
         with pytest.raises(ValueError, match="star_model required"):
             calculate_yield_snr(science, positions, fwhm=3.0, method="star")
+
+
+class TestYieldEstimatorArgument:
+    """calculate_yield_snr accepts an optional detection estimator."""
+
+    def _scene(self):
+        """Science image, star model, positions, fwhm for the star method."""
+        key = jax.random.PRNGKey(11)
+        star = 100.0 * jnp.exp(
+            -(
+                (jnp.arange(101)[:, None] - 50.0) ** 2
+                + (jnp.arange(101)[None, :] - 50.0) ** 2
+            )
+            / (2 * 8.0**2)
+        )
+        science = star + jax.random.normal(key, (101, 101))
+        positions = jnp.array([[68.0, 50.0], [50.0, 30.0]])
+        return science, star, positions, 5.0
+
+    def test_default_matches_explicit_none(self):
+        """Omitting estimator and passing None are identical."""
+        science, star, positions, fwhm = self._scene()
+        a = calculate_yield_snr(science, positions, fwhm, star_model=star)
+        b = calculate_yield_snr(
+            science, positions, fwhm, star_model=star, estimator=None
+        )
+        np.testing.assert_array_equal(np.asarray(a), np.asarray(b))
+
+    def test_snr_estimator_object_matches_default(self):
+        """An SNREstimator with the same config reproduces the default path."""
+        from coronalyze import snr_estimator
+
+        science, star, positions, fwhm = self._scene()
+        default = calculate_yield_snr(science, positions, fwhm, star_model=star)
+        est = snr_estimator(fwhm=fwhm)
+        via_est = calculate_yield_snr(
+            science, positions, fwhm, star_model=star, estimator=est
+        )
+        np.testing.assert_array_equal(np.asarray(default), np.asarray(via_est))
+
+    def test_detection_estimator_returns_statistic_array(self):
+        """A composed DetectionEstimator yields its statistic array."""
+        from coronalyze.core.detection.estimator import DetectionEstimator
+        from coronalyze.core.detection.filters import ApertureFilter
+        from coronalyze.core.detection.samplers import ApertureSampler
+        from coronalyze.core.detection.significance import GrubbsTest
+        from coronalyze.core.photometry import make_aperture_kernel
+
+        science, star, positions, fwhm = self._scene()
+        composed = DetectionEstimator(
+            filter=ApertureFilter(
+                kernel=make_aperture_kernel(
+                    radius=fwhm / 2.0, soft=True, sharpness=10.0
+                ),
+                order=3,
+            ),
+            sampler=ApertureSampler(fwhm=fwhm),
+            test=GrubbsTest(),
+        )
+        out = calculate_yield_snr(
+            science, positions, fwhm, star_model=star, estimator=composed
+        )
+        assert out.shape == (2,)
+        assert bool(jnp.all(jnp.isfinite(out)))
