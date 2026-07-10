@@ -14,8 +14,11 @@ import equinox as eqx
 import jax.numpy as jnp
 
 from coronalyze.contracts import DetectionStats, FrameSet
+from coronalyze.core.detection.estimator import DetectionEstimator
+from coronalyze.core.detection.filters import ApertureFilter
+from coronalyze.core.detection.samplers import ApertureSampler
+from coronalyze.core.detection.significance import TwoSampleTTest
 from coronalyze.core.snr import SNREstimator
-from coronalyze.core.statistics import student_t_sf
 
 
 class AbstractPostProcessing(eqx.Module):
@@ -57,7 +60,8 @@ class MawetPostProcessing(AbstractPostProcessing):
     statistic is scale-invariant, so it is computed on the exposure-weighted
     coadd regardless of frame count. References are ignored: the noise sample
     comes from the science image itself.
-    FrameSet.center_yx is ignored: the star is assumed to be at the geometric center.
+    FrameSet.center_yx is consulted: reference-aperture geometry is computed
+    about it, with the geometric image center used when it is None.
     """
 
     estimator: SNREstimator
@@ -102,16 +106,23 @@ class MawetPostProcessing(AbstractPostProcessing):
         """Compute the Mawet t-statistic and FPF on the science coadd."""
         del references  # Mawet self-references; see class docstring.
         image = science.coadd()
-        statistic, n_valid = self.estimator.snr_and_dof(
-            image, positions_yx, science.validity
+        composed = DetectionEstimator(
+            filter=ApertureFilter(
+                kernel=self.estimator.kernel, order=self.estimator.order
+            ),
+            sampler=ApertureSampler(
+                fwhm=self.estimator.fwhm,
+                max_apertures=self.estimator.max_apertures,
+                exclusion_buffer=self.estimator.exclusion_buffer,
+            ),
+            test=TwoSampleTTest(),
         )
-        dof = jnp.asarray(n_valid, dtype=jnp.result_type(float)) - 1.0
-        fpf = student_t_sf(statistic, dof)
+        stats = composed(image, positions_yx, science.validity, science.center_yx)
         return DetectionStats(
-            positions_yx=positions_yx,
-            statistic=statistic,
-            fpf=fpf,
-            dof=dof,
-            fwhm_px=self.estimator.fwhm,
+            positions_yx=stats.positions_yx,
+            statistic=stats.statistic,
+            fpf=stats.fpf,
+            dof=stats.dof,
+            fwhm_px=stats.fwhm_px,
             statistic_kind="mawet_t",
         )

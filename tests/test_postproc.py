@@ -188,3 +188,44 @@ def test_mawet_arm_coadd_uses_content_differing_frames():
     # frames[0]-only and unweighted-mean statistics differ from the coadd's.
     from_frame0 = snr(frames[0], planet_pos[None, :], FWHM_PX)
     assert not np.array_equal(np.asarray(stats.statistic), np.asarray(from_frame0))
+
+
+def test_mawet_arm_center_none_matches_geometric():
+    """center_yx=None stays bit-identical to the explicit geometric center."""
+    key = jr.PRNGKey(10)
+    image = jr.normal(key, (64, 64))
+    positions = jnp.array([[32.0, 48.0], [16.0, 32.0]])
+    fs = make_frameset(image)
+    n = fs.frames.shape[1]
+    c = (n - 1) / 2.0
+    fs_center = eqx.tree_at(
+        lambda f: f.center_yx,
+        fs,
+        jnp.array([c, c]),
+        is_leaf=lambda x: x is None,
+    )
+    arm = MawetPostProcessing(fwhm_px=FWHM_PX)
+    a = arm.detect(fs, positions)
+    b = arm.detect(fs_center, positions)
+    np.testing.assert_array_equal(np.asarray(a.statistic), np.asarray(b.statistic))
+    np.testing.assert_array_equal(np.asarray(a.fpf), np.asarray(b.fpf))
+
+
+def test_mawet_arm_consults_off_center():
+    """An off-center star center changes the reference geometry."""
+    key = jr.PRNGKey(11)
+    image = jr.normal(key, (64, 64))
+    positions = jnp.array([[32.0, 48.0], [16.0, 32.0]])
+    fs = make_frameset(image)
+    fs_off = eqx.tree_at(
+        lambda f: f.center_yx,
+        fs,
+        jnp.array([20.0, 40.0]),
+        is_leaf=lambda x: x is None,
+    )
+    arm = MawetPostProcessing(fwhm_px=FWHM_PX)
+    a = arm.detect(fs, positions)
+    b = arm.detect(fs_off, positions)
+    assert not np.array_equal(
+        np.asarray(a.statistic), np.asarray(b.statistic), equal_nan=True
+    )
