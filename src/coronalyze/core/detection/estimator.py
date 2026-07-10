@@ -13,10 +13,10 @@ class DetectionEstimator(eqx.Module):
 
     All three components are Equinox modules, so the composed estimator is a
     single pytree and the whole pipeline fuses into one XLA kernel under jit;
-    the decomposition is purely a source-level concern (February 2026
-    architecture). The estimator resolves defaults (all-valid map, geometric
-    star center), vmaps the per-candidate computation, and NaNs statistic
-    and FPF where the sampler reports the geometry invalid.
+    the decomposition is purely a source-level concern. The estimator
+    resolves defaults (all-valid map, geometric star center), vmaps the
+    per-candidate computation, and NaNs statistic and FPF where the sampler
+    reports the geometry invalid.
     """
 
     filter: AbstractFilter

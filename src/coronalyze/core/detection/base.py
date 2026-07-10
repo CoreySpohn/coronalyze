@@ -1,11 +1,11 @@
 """Abstract interfaces for the filter / sampler / significance decomposition.
 
-Every image-domain detection algorithm factors into three composable steps
-(February 2026 architecture): a filter measuring "how much signal is here",
-a sampler collecting "what does noise look like here", and a significance
-test converting the two into a statistic with a false positive fraction
-under its own null. All three are Equinox modules so a composed estimator
-JIT-compiles into a single fused kernel.
+Every image-domain detection algorithm factors into three composable steps:
+a filter measuring "how much signal is here", a sampler collecting "what
+does noise look like here", and a significance test converting the two into
+a statistic with a false positive fraction under its own null. All three
+are Equinox modules so a composed estimator JIT-compiles into a single
+fused kernel.
 """
 
 import abc
