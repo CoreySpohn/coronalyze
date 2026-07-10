@@ -39,12 +39,13 @@ class FrameSet(eqx.Module):
         pixel_scale_mas: Scalar detector pixel scale, milliarcseconds.
         noise_variance: Optional (n_frames, ny, nx) per-pixel total noise
             variance in electrons^2 (e.g. a detector model's variance budget);
-            used for inverse-variance weighting when present.
+            reserved for inverse-variance weighting (first consumer: the
+            PSF-template matched filter).
         validity: Optional (ny, nx) mask (1 = usable pixel, 0 = excluded).
         center_yx: Optional (2,) star center (y, x); defaults to the geometric
             center ((ny - 1) / 2, (nx - 1) / 2) when None.
         tau_c_s: Optional speckle decorrelation time, seconds; scalar or
-            (ny, nx) map. Consumed by correlated-noise-aware calibration.
+            (ny, nx) map. Reserved for correlated-noise-aware calibration.
     """
 
     frames: jnp.ndarray = eqx.field(converter=_asarray)

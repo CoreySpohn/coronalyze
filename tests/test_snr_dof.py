@@ -45,3 +45,14 @@ def test_n_valid_respects_validity_map():
     validity = jnp.ones_like(image).at[:, :32].set(0.0)  # kill half the field
     _, n_masked = estimator.snr_and_dof(image, positions, validity)
     assert int(n_masked[0]) < int(n_all[0])
+
+
+def test_count_reported_when_statistic_nan():
+    """The valid-aperture count survives the NaN gate (P1 carry-over guard)."""
+    key = jr.PRNGKey(5)
+    image = make_image(key)
+    inside = jnp.array([[33.0, 31.5]])  # r < fwhm -> NaN statistic
+    est = snr_estimator(fwhm=5.0)
+    snr_vals, counts = est.snr_and_dof(image, inside)
+    assert jnp.isnan(snr_vals[0])
+    assert int(counts[0]) >= 1

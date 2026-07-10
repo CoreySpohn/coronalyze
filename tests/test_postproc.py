@@ -4,6 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+import numpy as np
 import pytest
 
 from coronalyze.contracts import DetectionStats, FrameSet
@@ -148,3 +149,42 @@ def test_mawet_arm_detect_works_under_jit():
         return arm.detect(f, p).statistic
 
     assert jnp.allclose(run(fs, positions), arm.detect(fs, positions).statistic)
+
+
+def test_mawet_arm_coadd_uses_content_differing_frames():
+    """Test that the arm coadds content-differing frames rather than using frames[0].
+
+    Frame 0 carries the planet at double amplitude; frame 1 is planet-free.
+    The exposure-weighted coadd reproduces snr() on the explicit coadd and
+    differs from the frames[0]-only statistic. (An unweighted mean is
+    scale-proportional to the coadd, so scale invariance makes those two
+    indistinguishable BY CONSTRUCTION; frame selection is the failure mode
+    this guards.)
+    """
+    n = 64
+    planet_pos = jnp.array([32.0, 48.0])
+    key = jr.PRNGKey(9)
+    base = 5.0 + jr.normal(key, (n, n))
+    planet = inject_planet(
+        jnp.zeros((n, n)), gaussian_psf(n=n), flux=300.0, pos=planet_pos
+    )
+    frames = jnp.stack([base + 2.0 * planet, base])
+    exposure = jnp.array([1.0, 3.0])
+    fs = FrameSet(
+        frames=frames,
+        time_jd=jnp.array([0.0, 1.0]),
+        exposure_time_s=exposure,
+        telescope_pa_deg=jnp.zeros(2),
+        fwhm_px=FWHM_PX,
+        wavelength_nm=550.0,
+        bin_width_nm=100.0,
+        pixel_scale_mas=20.0,
+    )
+    arm = MawetPostProcessing(fwhm_px=FWHM_PX)
+    stats = arm.detect(fs, planet_pos[None, :])
+    explicit_coadd = jnp.sum(frames, axis=0) / jnp.sum(exposure)
+    expected = snr(explicit_coadd, planet_pos[None, :], FWHM_PX)
+    np.testing.assert_array_equal(np.asarray(stats.statistic), np.asarray(expected))
+    # frames[0]-only and unweighted-mean statistics differ from the coadd's.
+    from_frame0 = snr(frames[0], planet_pos[None, :], FWHM_PX)
+    assert not np.array_equal(np.asarray(stats.statistic), np.asarray(from_frame0))

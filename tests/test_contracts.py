@@ -160,3 +160,33 @@ def test_detection_stats_passes_through_jit():
         return jnp.min(s.fpf)
 
     assert float(min_fpf(stats)) == pytest.approx(0.05)
+
+
+def _frameset_kwargs(n_frames=2, ny=8, nx=8):
+    """Minimal valid FrameSet constructor arguments."""
+    return dict(
+        frames=jnp.ones((n_frames, ny, nx)),
+        time_jd=jnp.arange(n_frames, dtype=float),
+        exposure_time_s=jnp.ones(n_frames),
+        telescope_pa_deg=jnp.zeros(n_frames),
+        fwhm_px=4.0,
+        wavelength_nm=550.0,
+        bin_width_nm=100.0,
+        pixel_scale_mas=20.0,
+    )
+
+
+class TestOptionalFieldRejection:
+    """__check_init__ rejects malformed optional fields (P1 carry-over)."""
+
+    def test_bad_validity_shape_rejected(self):
+        """A validity mask not matching (ny, nx) raises ValueError."""
+        kwargs = _frameset_kwargs()
+        with pytest.raises(ValueError, match="validity"):
+            FrameSet(validity=jnp.ones((3, 3)), **kwargs)
+
+    def test_bad_center_shape_rejected(self):
+        """A center_yx that is not shape (2,) raises ValueError."""
+        kwargs = _frameset_kwargs()
+        with pytest.raises(ValueError, match="center_yx"):
+            FrameSet(center_yx=jnp.ones((3,)), **kwargs)
