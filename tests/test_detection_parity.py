@@ -229,3 +229,31 @@ class TestCenterThreading:
         assert not np.array_equal(
             np.asarray(a.statistic), np.asarray(b.statistic), equal_nan=True
         )
+
+
+class TestFrozenApiPinning:
+    """Public frozen APIs reproduce the golden cores after delegation."""
+
+    def test_snr_equals_golden_core(self):
+        """snr() output is unchanged by the delegation refactor."""
+        from coronalyze.core.photometry import make_aperture_kernel
+        from coronalyze.core.snr import snr
+
+        image = _scene(8)
+        positions = _positions()
+        kernel = make_aperture_kernel(radius=FWHM / 2.0, soft=True, sharpness=10.0)
+        golden, _ = golden_snr_batch_core(
+            image, positions, kernel, FWHM, MAX_APERTURES, 3, EXCLUSION_BUFFER, None
+        )
+        _assert_parity(snr(image, positions, FWHM), golden)
+
+    def test_matched_filter_snr_equals_golden_core(self):
+        """matched_filter_snr() output is unchanged by the delegation."""
+        from coronalyze.core.matched_filter import matched_filter_snr
+
+        image = _scene(9)
+        positions = _positions()
+        golden = golden_matched_filter_snr_batch_core(
+            image, positions, FWHM, gaussian_kernel_1d(FWHM), 3, -1.0, -1.0
+        )
+        _assert_parity(matched_filter_snr(image, positions, FWHM), golden)

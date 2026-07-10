@@ -16,14 +16,14 @@ For experimental matched-filter SNR, see coronalyze.core.matched_filter.
 Reference: Mawet et al. (2014), ApJ, 792, 97
 """
 
-import functools
-
 import equinox as eqx
-import jax
 import jax.numpy as jnp
-from hwoutils.map_coordinates import map_coordinates
 
-from coronalyze.core.photometry import flux_map, make_aperture_kernel
+from coronalyze.core.detection.estimator import DetectionEstimator
+from coronalyze.core.detection.filters import ApertureFilter
+from coronalyze.core.detection.samplers import ApertureSampler
+from coronalyze.core.detection.significance import TwoSampleTTest
+from coronalyze.core.photometry import make_aperture_kernel
 
 # =============================================================================
 # SNR Estimator Class
@@ -115,17 +115,7 @@ class SNREstimator(eqx.Module):
         Returns:
             (N,) array of SNR values.
         """
-        snr_vals, _ = _snr_batch_core(
-            image,
-            positions,
-            self.kernel,
-            self.fwhm,
-            self.max_apertures,
-            self.order,
-            self.exclusion_buffer,
-            validity_map,
-        )
-        return snr_vals
+        return _composed_mawet(self)(image, positions, validity_map).statistic
 
     def snr_and_dof(
         self,
@@ -148,16 +138,9 @@ class SNREstimator(eqx.Module):
         Returns:
             Tuple of ((N,) SNR values, (N,) integer valid-aperture counts).
         """
-        return _snr_batch_core(
-            image,
-            positions,
-            self.kernel,
-            self.fwhm,
-            self.max_apertures,
-            self.order,
-            self.exclusion_buffer,
-            validity_map,
-        )
+        stats = _composed_mawet(self)(image, positions, validity_map)
+        n_valid = (stats.dof + 1.0).astype(int)
+        return stats.statistic, n_valid
 
     def map(
         self,
@@ -166,7 +149,7 @@ class SNREstimator(eqx.Module):
     ) -> jnp.ndarray:
         """Generate a full SNR detection map for the image.
 
-        This is computationally expensive O(N²) but useful for
+        This is computationally expensive O(N**2) but useful for
         generating detection maps.
 
         Args:
@@ -182,6 +165,19 @@ class SNREstimator(eqx.Module):
 
         flat_snr = self(image, positions, validity_map)
         return flat_snr.reshape(ny, nx)
+
+
+def _composed_mawet(estimator: "SNREstimator") -> DetectionEstimator:
+    """Composed detection estimator equivalent to a frozen SNREstimator."""
+    return DetectionEstimator(
+        filter=ApertureFilter(kernel=estimator.kernel, order=estimator.order),
+        sampler=ApertureSampler(
+            fwhm=estimator.fwhm,
+            max_apertures=estimator.max_apertures,
+            exclusion_buffer=estimator.exclusion_buffer,
+        ),
+        test=TwoSampleTTest(),
+    )
 
 
 # =============================================================================
@@ -296,7 +292,7 @@ def snr_map(
     """Generate a 2D map of SNR values using Mawet et al. (2014).
 
     Computes SNR at every pixel position. This is computationally expensive
-    O(N²) but useful for generating detection maps.
+    O(N**2) but useful for generating detection maps.
 
     Args:
         image: 2D science image.
@@ -320,109 +316,6 @@ def snr_map(
         exclusion_buffer=exclusion_buffer,
     )
     return estimator.map(image)
-
-
-# =============================================================================
-# Core JIT-Compiled Functions (Internal)
-# =============================================================================
-
-
-@functools.partial(jax.jit, static_argnums=(4, 5))
-def _snr_batch_core(
-    image: jnp.ndarray,
-    positions: jnp.ndarray,
-    kernel: jnp.ndarray,
-    fwhm: float,
-    max_apertures: int,
-    order: int,
-    exclusion_buffer: float = 0.5,
-    validity_map: jnp.ndarray | None = None,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """JIT-compiled batch SNR calculation (Mawet method).
-
-    Args:
-        image: 2D science image.
-        positions: (N, 2) array of (y, x) coordinates.
-        kernel: Pre-computed aperture kernel.
-        fwhm: Full width at half maximum in pixels.
-        max_apertures: Maximum buffer size for static shapes.
-        order: Interpolation order (1=bilinear, 3=cubic).
-        exclusion_buffer: Angular gap between test and first reference.
-        validity_map: Optional 2D mask (1=valid, 0=invalid). Off-chip
-            locations automatically get 0 via cval boundary handling.
-
-    Returns:
-        Tuple of (snr values (N,), valid reference-aperture counts (N,)).
-    """
-    # Compute flux map ONCE
-    fmap = flux_map(image, kernel)
-    ny, nx = image.shape
-    cy, cx = (ny - 1) / 2.0, (nx - 1) / 2.0
-
-    # Default to all-valid if no mask provided
-    if validity_map is None:
-        validity_map = jnp.ones((ny, nx))
-
-    def _single_snr(planet_pos: jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
-        py, px = planet_pos[0], planet_pos[1]
-
-        # Extract planet flux
-        planet_flux = map_coordinates(fmap, jnp.array([[py], [px]]), order=order)[0]
-
-        # Geometry
-        r_pix = jnp.sqrt((py - cy) ** 2 + (px - cx) ** 2)
-        planet_angle = jnp.arctan2(py - cy, px - cx)
-
-        # Number of apertures (VIP formula, with exclusion buffer on both sides)
-        half_angle = jnp.arcsin(jnp.minimum(fwhm / 2.0 / jnp.maximum(r_pix, 0.1), 1.0))
-        d_theta = 2.0 * half_angle
-        n_theoretical = jnp.floor(2 * jnp.pi / jnp.maximum(d_theta, 0.01))
-        # Subtract: 1 for planet position + 2*buffer for gap on each side
-        n_actual = jnp.maximum(
-            (n_theoretical - 1 - 2 * exclusion_buffer).astype(int), 1
-        )
-
-        # Generate reference aperture coordinates with exclusion buffer
-        idx_grid = jnp.arange(max_apertures)
-        angles = planet_angle - (idx_grid + 1 + exclusion_buffer) * d_theta
-        ref_y = cy + r_pix * jnp.sin(angles)
-        ref_x = cx + r_pix * jnp.cos(angles)
-
-        # Sample validity map (cval=0.0 auto-excludes off-chip apertures)
-        ref_validity = map_coordinates(
-            validity_map,
-            jnp.stack([ref_y, ref_x]),
-            order=0,  # Nearest neighbor for speed
-            cval=0.0,  # Off-chip = invalid
-        )
-
-        # Unified mask: index valid AND spatially valid
-        mask = (idx_grid < n_actual) & (ref_validity > 0.5)
-
-        # Sample background fluxes
-        ref_fluxes = map_coordinates(fmap, jnp.stack([ref_y, ref_x]), order=order)
-
-        # Masked statistics using actual valid count
-        n_valid = jnp.sum(mask)
-        bg_mean = jnp.sum(ref_fluxes * mask) / jnp.maximum(n_valid, 1.0)
-        residuals = (ref_fluxes - bg_mean) * mask
-        bg_std = jnp.sqrt(jnp.sum(residuals**2) / jnp.maximum(n_valid - 1, 1.0))
-
-        # Small-sample penalty using actual valid count
-        penalty = jnp.sqrt(1 + 1 / jnp.maximum(n_valid, 1.0))
-
-        # SNR calculation
-        signal = planet_flux - bg_mean
-        noise = bg_std * penalty
-        snr_val = signal / jnp.maximum(noise, 1e-10)
-
-        # Return NaN for unreliable measurements:
-        # - Radius smaller than FWHM (can't fit reference apertures)
-        # - Fewer than 3 valid reference apertures (insufficient statistics)
-        is_valid = (r_pix >= fwhm) & (n_valid >= 3)
-        return jnp.where(is_valid, snr_val, jnp.nan), n_valid.astype(int)
-
-    return jax.vmap(_single_snr)(positions)  # -> (snr (N,), n_valid (N,))
 
 
 # =============================================================================

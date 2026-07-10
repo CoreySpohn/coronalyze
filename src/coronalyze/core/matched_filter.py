@@ -17,12 +17,13 @@ Note: This module is NOT exported from the main coronalyze namespace.
 Import directly: from coronalyze.core.matched_filter import matched_filter_snr
 """
 
-import functools
-
 import equinox as eqx
-import jax
 import jax.numpy as jnp
-from hwoutils.map_coordinates import map_coordinates
+
+from coronalyze.core.detection.estimator import DetectionEstimator
+from coronalyze.core.detection.filters import GaussianFilter
+from coronalyze.core.detection.samplers import AnnulusSampler
+from coronalyze.core.detection.significance import AnnulusSigmaTest
 
 # =============================================================================
 # Matched Filter SNR Estimator
@@ -96,16 +97,14 @@ class MatchedFilterSNREstimator(eqx.Module):
         """
         inner_r = annulus_inner if annulus_inner is not None else -1.0
         outer_r = annulus_outer if annulus_outer is not None else -1.0
-
-        return _matched_filter_snr_batch_core(
-            image,
-            positions,
-            self.fwhm,
-            self.kernel_1d,
-            self.order,
-            inner_r,
-            outer_r,
+        composed = DetectionEstimator(
+            filter=GaussianFilter(kernel_1d=self.kernel_1d, order=self.order),
+            sampler=AnnulusSampler(
+                fwhm=self.fwhm, annulus_inner=inner_r, annulus_outer=outer_r
+            ),
+            test=AnnulusSigmaTest(),
         )
+        return composed(image, positions).statistic
 
 
 # =============================================================================
@@ -161,86 +160,3 @@ def matched_filter_snr(
     """
     estimator = matched_filter_snr_estimator(fwhm=fwhm, fast=fast)
     return estimator(image, positions, annulus_inner, annulus_outer)
-
-
-# =============================================================================
-# Core JIT-Compiled Functions (Internal)
-# =============================================================================
-
-
-@functools.partial(jax.jit, static_argnums=(4,))
-def _matched_filter_snr_batch_core(
-    image: jnp.ndarray,
-    positions: jnp.ndarray,
-    fwhm: float,
-    kernel_1d: jnp.ndarray,
-    order: int,
-    annulus_inner: float,
-    annulus_outer: float,
-) -> jnp.ndarray:
-    """JIT-compiled batch matched-filter SNR calculation."""
-    ny, nx = image.shape
-    cy, cx = (ny - 1) / 2.0, (nx - 1) / 2.0
-    max_radius = jnp.minimum(ny, nx) / 2 - 1
-
-    # Compute filtered image ONCE
-    filtered = _gaussian_filter_2d(image, kernel_1d)
-
-    # Pre-compute coordinate grids
-    y_coords, x_coords = jnp.meshgrid(jnp.arange(ny), jnp.arange(nx), indexing="ij")
-    r_grid = jnp.sqrt((y_coords - cy) ** 2 + (x_coords - cx) ** 2)
-
-    def _single_snr(planet_pos: jnp.ndarray) -> float:
-        py, px = planet_pos[0], planet_pos[1]
-        r_planet = jnp.sqrt((py - cy) ** 2 + (px - cx) ** 2)
-
-        # Default annulus bounds
-        default_inner = jnp.maximum(r_planet - fwhm, fwhm)
-        default_outer = jnp.minimum(r_planet + fwhm, max_radius)
-        default_inner = jnp.minimum(default_inner, default_outer - 1.0)
-
-        inner_r = jnp.where(annulus_inner >= 0, annulus_inner, default_inner)
-        outer_r = jnp.where(annulus_outer >= 0, annulus_outer, default_outer)
-
-        # Extract raw signal
-        raw_signal = map_coordinates(filtered, jnp.array([[py], [px]]), order=order)[0]
-
-        # Annulus mask
-        planet_dist = jnp.sqrt((y_coords - py) ** 2 + (x_coords - px) ** 2)
-        annulus_mask = (
-            (r_grid >= inner_r) & (r_grid <= outer_r) & (planet_dist > fwhm * 1.5)
-        )
-
-        # Background statistics
-        masked_vals = jnp.where(annulus_mask, filtered, jnp.nan)
-        bg_mean = jnp.nanmean(masked_vals)
-        variance = jnp.nanmean(
-            jnp.where(annulus_mask, (filtered - bg_mean) ** 2, jnp.nan)
-        )
-        bg_std = jnp.sqrt(variance)
-
-        bg_mean = jnp.nan_to_num(bg_mean, nan=0.0)
-        bg_std = jnp.nan_to_num(bg_std, nan=1.0)
-
-        signal = raw_signal - bg_mean
-        return signal / jnp.maximum(bg_std, 1e-10)
-
-    return jax.vmap(_single_snr)(positions)
-
-
-@jax.jit
-def _gaussian_filter_2d(image: jnp.ndarray, kernel_1d: jnp.ndarray) -> jnp.ndarray:
-    """Apply 2D Gaussian filter using separable convolution."""
-    pad_size = len(kernel_1d) // 2
-
-    # Row convolution
-    padded = jnp.pad(image, ((0, 0), (pad_size, pad_size)), mode="reflect")
-    row_conv = jax.vmap(lambda row: jnp.convolve(row, kernel_1d, mode="valid"))(padded)
-
-    # Column convolution
-    padded = jnp.pad(row_conv, ((pad_size, pad_size), (0, 0)), mode="reflect")
-    col_conv = jax.vmap(
-        lambda col: jnp.convolve(col, kernel_1d, mode="valid"), in_axes=1, out_axes=1
-    )(padded)
-
-    return col_conv
