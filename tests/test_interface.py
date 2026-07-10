@@ -89,3 +89,32 @@ def test_seam_contract_names_resolve_at_top_level():
     ):
         assert hasattr(coronalyze, name), name
         assert name in coronalyze.__all__, name
+
+
+def test_detection_core_names_resolve_at_top_level():
+    """Phase 2 detection names are importable from the package root."""
+    import coronalyze
+
+    for name in (
+        "DetectionEstimator",
+        "AbstractFilter",
+        "AbstractSampler",
+        "AbstractTest",
+        "ApertureFilter",
+        "GaussianFilter",
+        "ApertureSampler",
+        "AnnulusSampler",
+        "TwoSampleTTest",
+        "AnnulusSigmaTest",
+        "GrubbsTest",
+        "normal_sf",
+        "grubbs_fpf",
+        "n_reference_apertures",
+        "matched_filter_snr",
+        "matched_filter_snr_estimator",
+        "MatchedFilterSNREstimator",
+        "gaussian_kernel_1d",
+        "gaussian_filter_2d",
+    ):
+        assert hasattr(coronalyze, name), name
+        assert name in coronalyze.__all__, name

@@ -12,9 +12,6 @@ Functions:
 
 Classes:
     - MatchedFilterSNREstimator: Equinox module for efficient batch computation
-
-Note: This module is NOT exported from the main coronalyze namespace.
-Import directly: from coronalyze.core.matched_filter import matched_filter_snr
 """
 
 import equinox as eqx

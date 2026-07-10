@@ -11,7 +11,8 @@ Primary SNR API (Mawet et al. 2014):
 
 Seam contracts: FrameSet -> AbstractPostProcessing.detect -> DetectionStats.
 
-For experimental matched-filter SNR, see coronalyze.core.matched_filter.
+Matched-filter SNR (matched_filter_snr) and the composable detection estimator
+are exported at the top level.
 """
 
 from importlib.metadata import version as _get_version
@@ -30,19 +31,38 @@ from coronalyze.contracts import DetectionStats, FrameSet
 
 # Core primitives
 from coronalyze.core import (
+    AbstractFilter,
+    AbstractSampler,
+    AbstractTest,
+    AnnulusSampler,
+    AnnulusSigmaTest,
+    ApertureFilter,
+    ApertureSampler,
+    DetectionEstimator,
+    GaussianFilter,
+    GrubbsTest,
+    MatchedFilterSNREstimator,
+    TwoSampleTTest,
     aperture_photometry,
     aperture_solid_angle,
     calculate_n_apertures,
     circular_aperture_mask,
     flux_map,
+    gaussian_filter_2d,
+    gaussian_kernel_1d,
     generate_aperture_coords,
     get_center,
     get_pca_basis,
+    grubbs_fpf,
     inject_planet,
     make_aperture_kernel,
     make_simple_disk,
     masked_mean,
     masked_std,
+    matched_filter_snr,
+    matched_filter_snr_estimator,
+    n_reference_apertures,
+    normal_sf,
     pca_subtract,
     radial_distance,
     small_sample_penalty,
@@ -90,6 +110,26 @@ __all__ = [
     # CCD-level SNR
     "calculate_ccd_snr",
     "exposure_time_for_snr",
+    # Composable detection (filter / sampler / significance)
+    "DetectionEstimator",
+    "AbstractFilter",
+    "AbstractSampler",
+    "AbstractTest",
+    "ApertureFilter",
+    "GaussianFilter",
+    "ApertureSampler",
+    "AnnulusSampler",
+    "TwoSampleTTest",
+    "AnnulusSigmaTest",
+    "GrubbsTest",
+    "gaussian_kernel_1d",
+    "gaussian_filter_2d",
+    "matched_filter_snr",
+    "matched_filter_snr_estimator",
+    "MatchedFilterSNREstimator",
+    "normal_sf",
+    "grubbs_fpf",
+    "n_reference_apertures",
     # Subtraction Primitives
     "subtract_star",
     "subtract_disk",
