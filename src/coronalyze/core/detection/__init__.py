@@ -1,6 +1,7 @@
 """Composable detection: filters, samplers, significance tests, estimator."""
 
 from coronalyze.core.detection.base import AbstractFilter, AbstractSampler, AbstractTest
+from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.detection.filters import (
     ApertureFilter,
     GaussianFilter,
@@ -22,6 +23,7 @@ __all__ = [
     "AnnulusSigmaTest",
     "ApertureFilter",
     "ApertureSampler",
+    "DetectionEstimator",
     "GaussianFilter",
     "GrubbsTest",
     "TwoSampleTTest",
