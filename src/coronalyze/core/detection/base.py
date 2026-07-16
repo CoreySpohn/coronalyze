@@ -40,6 +40,26 @@ class AbstractFilter(eqx.Module):
             Scalar response.
         """
 
+    def bind(self, position_yx: jnp.ndarray) -> "AbstractFilter":
+        """Specialize this filter to a candidate position.
+
+        The default is the identity: shift-invariant filters measure every
+        position with the same configuration. Position-dependent filters
+        override this to fetch per-candidate state (e.g. the local PSF
+        template); the estimator binds once per candidate and evaluates the
+        BOUND filter at the candidate and at every reference position, so
+        the noise samples measure the null distribution of the candidate's
+        own filter.
+
+        Args:
+            position_yx: (2,) candidate position (y, x) in pixels.
+
+        Returns:
+            The filter to use for this candidate (self by default).
+        """
+        del position_yx
+        return self
+
 
 class AbstractSampler(eqx.Module):
     """Noise-reference collection step for a candidate position."""
@@ -60,9 +80,9 @@ class AbstractSampler(eqx.Module):
         Args:
             filtered: Output of filt.prepare() for the current image.
             position_yx: (2,) candidate position in pixels.
-            filt: The filter whose response defines the samples (evaluated
-                with the candidate's own configuration; see the sliding-
-                template rule in the architecture).
+            filt: The filter whose response defines the samples (the
+                estimator passes the candidate-bound filter; see
+                AbstractFilter.bind).
             validity_map: (ny, nx) map, 1 = usable pixel, 0 = excluded.
             center_yx: (2,) star center in pixels.
 

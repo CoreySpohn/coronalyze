@@ -54,9 +54,10 @@ class DetectionEstimator(eqx.Module):
 
         def _single(position_yx: jnp.ndarray):
             """Statistic, FPF, and dof for one candidate."""
-            signal = self.filter.evaluate(filtered, position_yx)
+            filt = self.filter.bind(position_yx)
+            signal = filt.evaluate(filtered, position_yx)
             samples, mask, geom_ok = self.sampler(
-                filtered, position_yx, self.filter, validity_map, center
+                filtered, position_yx, filt, validity_map, center
             )
             statistic, fpf, dof = self.test(signal, samples, mask)
             statistic = jnp.where(geom_ok, statistic, jnp.nan)

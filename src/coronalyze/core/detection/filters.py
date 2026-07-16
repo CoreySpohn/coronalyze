@@ -6,7 +6,9 @@ import jax.numpy as jnp
 from hwoutils.map_coordinates import map_coordinates
 
 from coronalyze.core.detection.base import AbstractFilter
+from coronalyze.core.detection.patches import extract_patch
 from coronalyze.core.photometry import flux_map
+from coronalyze.templates.base import AbstractTemplateProvider
 
 
 def gaussian_kernel_1d(fwhm: float) -> jnp.ndarray:
@@ -88,3 +90,88 @@ class GaussianFilter(AbstractFilter):
     def evaluate(self, filtered: jnp.ndarray, position_yx: jnp.ndarray) -> jnp.ndarray:
         """Sample the filtered image at one position."""
         return map_coordinates(filtered, position_yx.reshape(2, 1), order=self.order)[0]
+
+
+class PSFTemplateFilter(AbstractFilter):
+    """Position-dependent PSF-template matched filter (local inner product).
+
+    A coronagraph PSF changes shape with separation, which breaks the shift
+    invariance that makes convolution a matched filter; this filter instead
+    computes a normalized inner product between the local image patch and
+    the candidate position's own PSF template, both zero-meaned. The
+    response is the best-fit template amplitude, so injecting
+    amplitude * template at the candidate adds amplitude to the response.
+
+    With a per-pixel noise variance map the inner product is
+    inverse-variance weighted (diagonal generalized least squares with a
+    fitted constant background; Ruffio et al. 2017): weighted means replace
+    means and weighted sums replace sums, reducing exactly to the
+    unweighted form when the variance is uniform.
+
+    The template is bound per candidate (see AbstractFilter.bind): the
+    estimator queries the provider once per candidate and evaluates the
+    same bound template at the candidate and at every reference position.
+    """
+
+    provider: AbstractTemplateProvider
+    order: int = eqx.field(static=True)
+    noise_variance: jnp.ndarray | None
+    template: jnp.ndarray | None
+
+    def __init__(
+        self,
+        provider: AbstractTemplateProvider,
+        order: int = 3,
+        noise_variance: jnp.ndarray | None = None,
+        template: jnp.ndarray | None = None,
+    ):
+        """Configure the filter.
+
+        Args:
+            provider: Template source; its stamp_size sets the patch size.
+            order: Interpolation order for image patch extraction.
+            noise_variance: Optional (ny, nx) per-pixel variance of the
+                detection image (same units squared); enables
+                inverse-variance weighting.
+            template: The bound stamp; leave None (bind() fills it).
+        """
+        self.provider = provider
+        self.order = order
+        self.noise_variance = noise_variance
+        self.template = template
+
+    def bind(self, position_yx: jnp.ndarray) -> "PSFTemplateFilter":
+        """Fetch and attach the template for this candidate position."""
+        return eqx.tree_at(
+            lambda f: f.template,
+            self,
+            self.provider(position_yx),
+            is_leaf=lambda x: x is None,
+        )
+
+    def prepare(self, image: jnp.ndarray) -> jnp.ndarray:
+        """Identity: a position-dependent template admits no precompute."""
+        return image
+
+    def evaluate(self, filtered: jnp.ndarray, position_yx: jnp.ndarray) -> jnp.ndarray:
+        """Best-fit template amplitude at one position."""
+        if self.template is None:
+            raise ValueError(
+                "PSFTemplateFilter is unbound; DetectionEstimator binds it per "
+                "candidate, or call filter.bind(position_yx) explicitly."
+            )
+        size = self.provider.stamp_size
+        img_patch = extract_patch(filtered, position_yx, size, order=self.order)
+        template = self.template
+        if self.noise_variance is None:
+            img_zm = img_patch - jnp.mean(img_patch)
+            t_zm = template - jnp.mean(template)
+            return jnp.sum(img_zm * t_zm) / jnp.maximum(jnp.sum(t_zm**2), 1e-10)
+        variance = extract_patch(self.noise_variance, position_yx, size, order=1)
+        weights = 1.0 / jnp.maximum(variance, 1e-12)
+        w_sum = jnp.sum(weights)
+        img_zm = img_patch - jnp.sum(weights * img_patch) / w_sum
+        t_zm = template - jnp.sum(weights * template) / w_sum
+        return jnp.sum(weights * img_zm * t_zm) / jnp.maximum(
+            jnp.sum(weights * t_zm**2), 1e-10
+        )
