@@ -17,6 +17,7 @@ import jax
 import jax.numpy as jnp
 
 from coronalyze.contracts import DetectionStats
+from coronalyze.core.matched_filter import MatchedFilterSNREstimator
 from coronalyze.core.modeling import subtract_disk, subtract_star
 from coronalyze.core.pca import get_pca_basis, pca_subtract
 from coronalyze.core.snr import snr
@@ -100,7 +101,7 @@ def calculate_yield_snr(
             The return is always the (N,) statistic array. Caution: the
             estimator is invoked positionally, so an object whose third
             argument is not a validity map (e.g. MatchedFilterSNREstimator,
-            which takes annulus_inner there) would silently misbind it;
+            which takes annulus_inner there) is rejected with a TypeError;
             wrap such estimators in a DetectionEstimator instead.
 
     Returns:
@@ -150,6 +151,13 @@ def calculate_yield_snr(
             fwhm,
             exclusion_buffer=exclusion_buffer,
             validity_map=validity_map,
+        )
+    if isinstance(estimator, MatchedFilterSNREstimator):
+        raise TypeError(
+            "MatchedFilterSNREstimator takes annulus_inner as its third "
+            "positional argument, so calculate_yield_snr would misbind "
+            "validity_map; compose a DetectionEstimator (GaussianFilter + "
+            "AnnulusSampler + AnnulusSigmaTest) instead."
         )
     result = estimator(residual, planet_positions, validity_map)
     if isinstance(result, DetectionStats):

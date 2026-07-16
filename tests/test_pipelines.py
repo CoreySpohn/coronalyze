@@ -215,3 +215,20 @@ class TestYieldEstimatorArgument:
         )
         assert out.shape == (2,)
         assert bool(jnp.all(jnp.isfinite(out)))
+
+
+class TestEstimatorGuard:
+    """calculate_yield_snr rejects estimators whose signature would misbind."""
+
+    def test_matched_filter_estimator_rejected(self):
+        """Passing a MatchedFilterSNREstimator raises TypeError."""
+        from coronalyze import MatchedFilterSNREstimator
+
+        science = jnp.ones((64, 64))
+        star = jnp.ones((64, 64))
+        positions = jnp.array([[32.0, 44.0]])
+        estimator = MatchedFilterSNREstimator(fwhm=4.0)
+        with pytest.raises(TypeError, match="annulus_inner"):
+            calculate_yield_snr(
+                science, positions, 4.0, star_model=star, estimator=estimator
+            )
