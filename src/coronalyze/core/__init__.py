@@ -1,8 +1,8 @@
 # ruff: noqa: RUF022
 """Core JAX-based analysis primitives for coronalyze.
 
-This module contains pure JAX mathematical functions with no external dependencies.
-All functions are JIT-compilable and differentiable.
+This module contains pure JAX mathematical functions built on jax, equinox,
+and hwoutils only. All functions are JIT-compilable and differentiable.
 """
 
 # Composable detection

@@ -97,7 +97,11 @@ def calculate_yield_snr(
             default) uses the frozen Mawet snr() path with the fwhm and
             exclusion_buffer arguments; an SNREstimator or a composed
             DetectionEstimator overrides them (its own configuration wins).
-            The return is always the (N,) statistic array.
+            The return is always the (N,) statistic array. Caution: the
+            estimator is invoked positionally, so an object whose third
+            argument is not a validity map (e.g. MatchedFilterSNREstimator,
+            which takes annulus_inner there) would silently misbind it;
+            wrap such estimators in a DetectionEstimator instead.
 
     Returns:
         SNR values for each planet position.

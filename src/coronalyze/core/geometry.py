@@ -128,7 +128,7 @@ def generate_aperture_coords(
         fwhm: Full width half maximum for VIP-style angle calculation. If None,
               uses uniform distribution.
         exclusion_buffer: Gap between test and first reference aperture in
-            units of angular step (default 0.0). Prevents PSF wing leakage.
+            units of angular step (default 0.5). Prevents PSF wing leakage.
 
     Returns:
         Tuple of (y_coords, x_coords, mask) where:

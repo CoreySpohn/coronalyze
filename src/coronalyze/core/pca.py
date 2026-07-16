@@ -19,7 +19,7 @@ def get_pca_basis(
     """Compute PCA basis vectors from a reference cube (Snapshot Method).
 
     Uses eigendecomposition of the NxN covariance matrix instead of full SVD,
-    which is O(N²xP) vs O(P²xN) for pixels P >> frames N.
+    which is O(N**2 x P) vs O(P**2 x N) for pixels P >> frames N.
 
     Args:
         ref_cube: Reference image cube of shape (N_frames, Height, Width).

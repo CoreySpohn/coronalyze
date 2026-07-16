@@ -37,7 +37,7 @@ def get_fwhm(
 ) -> float:
     """Calculate the FWHM of the PSF in pixels.
 
-    Uses the diffraction limit: FWHM ≈ λ/D
+    Uses the diffraction limit: FWHM ~ lambda/D
 
     Args:
         wavelength_nm: Observation wavelength in nanometers.
@@ -47,7 +47,7 @@ def get_fwhm(
     Returns:
         FWHM in pixels.
     """
-    # λ/D in radians
+    # lambda/D in radians
     wavelength_m = wavelength_nm * 1e-9
     lambda_over_d_rad = wavelength_m / diameter_m
 
