@@ -95,7 +95,7 @@ def test_seam_contract_names_resolve_at_top_level():
 
 
 def test_detection_core_names_resolve_at_top_level():
-    """Phase 2 detection names are importable from the package root."""
+    """Composable detection names are importable from the package root."""
     import coronalyze
 
     for name in (
