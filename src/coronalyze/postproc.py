@@ -14,7 +14,14 @@ import equinox as eqx
 import jax.numpy as jnp
 
 from coronalyze.contracts import DetectionStats, FrameSet
+from coronalyze.core.detection import (
+    ApertureSampler,
+    DetectionEstimator,
+    PSFTemplateFilter,
+    TwoSampleTTest,
+)
 from coronalyze.core.snr import SNREstimator, _composed_mawet
+from coronalyze.templates.base import AbstractTemplateProvider
 
 
 class AbstractPostProcessing(eqx.Module):
@@ -111,4 +118,93 @@ class MawetPostProcessing(AbstractPostProcessing):
             dof=stats.dof,
             fwhm_px=stats.fwhm_px,
             statistic_kind="mawet_t",
+        )
+
+
+class MatchedFilterPostProc(AbstractPostProcessing):
+    """PSF-template matched-filter detection on the coadded frame.
+
+    The statistic is the small-sample-corrected two-sample t-statistic of
+    the candidate's best-fit template amplitude against the same filter
+    evaluated at same-radius reference apertures (exact t with
+    n_references - 1 degrees of freedom; the reference spread is the
+    empirical matched-filter noise normalization of Ruffio et al. 2017).
+    When whiten is True and the FrameSet carries noise_variance, the
+    template fit is inverse-variance weighted using the coadd-propagated
+    variance sum(noise_variance) / sum(exposure_time_s)**2.
+
+    References are ignored: the noise sample comes from the science image
+    itself. FrameSet.center_yx is consulted for the reference-aperture
+    geometry; the provider's own center_yx must describe the same star.
+    """
+
+    provider: AbstractTemplateProvider
+    fwhm_px: float
+    exclusion_buffer: float
+    order: int = eqx.field(static=True)
+    max_apertures: int = eqx.field(static=True)
+    whiten: bool = eqx.field(static=True)
+
+    def __init__(
+        self,
+        provider: AbstractTemplateProvider,
+        fwhm_px: float,
+        order: int = 3,
+        max_apertures: int = 200,
+        exclusion_buffer: float = 0.5,
+        whiten: bool = True,
+    ):
+        """Build the arm around a template provider.
+
+        Args:
+            provider: Template source (its stamp size sets the fit window).
+            fwhm_px: Resolution element (lambda/D) in pixels, for the
+                reference-aperture geometry.
+            order: Interpolation order for patch extraction.
+            max_apertures: Static reference-aperture buffer size.
+            exclusion_buffer: Gap between test and first reference aperture,
+                in angular-step units.
+            whiten: Use FrameSet.noise_variance (when present) to
+                inverse-variance weight the template fit.
+        """
+        self.provider = provider
+        self.fwhm_px = fwhm_px
+        self.order = order
+        self.max_apertures = max_apertures
+        self.exclusion_buffer = exclusion_buffer
+        self.whiten = whiten
+
+    def detect(
+        self,
+        science: FrameSet,
+        positions_yx: jnp.ndarray,
+        *,
+        references: FrameSet | None = None,
+    ) -> DetectionStats:
+        """Compute the template-fit t-statistic and FPF on the science coadd."""
+        del references  # Self-referencing arm; see class docstring.
+        image = science.coadd()
+        variance = None
+        if self.whiten and science.noise_variance is not None:
+            total_time = jnp.sum(science.exposure_time_s)
+            variance = jnp.sum(science.noise_variance, axis=0) / total_time**2
+        composed = DetectionEstimator(
+            filter=PSFTemplateFilter(
+                provider=self.provider, order=self.order, noise_variance=variance
+            ),
+            sampler=ApertureSampler(
+                fwhm=self.fwhm_px,
+                max_apertures=self.max_apertures,
+                exclusion_buffer=self.exclusion_buffer,
+            ),
+            test=TwoSampleTTest(),
+        )
+        stats = composed(image, positions_yx, science.validity, science.center_yx)
+        return DetectionStats(
+            positions_yx=stats.positions_yx,
+            statistic=stats.statistic,
+            fpf=stats.fpf,
+            dof=stats.dof,
+            fwhm_px=stats.fwhm_px,
+            statistic_kind="psf_template_t",
         )
