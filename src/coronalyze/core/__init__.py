@@ -17,7 +17,9 @@ from coronalyze.core.detection import (
     DetectionEstimator,
     GaussianFilter,
     GrubbsTest,
+    PSFTemplateFilter,
     TwoSampleTTest,
+    extract_patch,
     gaussian_filter_2d,
     gaussian_kernel_1d,
 )
@@ -87,6 +89,7 @@ __all__ = [
     "AbstractTest",
     "ApertureFilter",
     "GaussianFilter",
+    "PSFTemplateFilter",
     "ApertureSampler",
     "AnnulusSampler",
     "TwoSampleTTest",
@@ -94,6 +97,7 @@ __all__ = [
     "GrubbsTest",
     "gaussian_kernel_1d",
     "gaussian_filter_2d",
+    "extract_patch",
     # Matched filter (Gaussian)
     "matched_filter_snr",
     "matched_filter_snr_estimator",

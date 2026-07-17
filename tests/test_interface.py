@@ -1,5 +1,8 @@
 """Tests for the coronagraphoto interface module."""
 
+import subprocess
+import sys
+
 import jax.numpy as jnp
 
 from coronalyze.interfaces.coronagraphoto import (
@@ -118,3 +121,41 @@ def test_detection_core_names_resolve_at_top_level():
     ):
         assert hasattr(coronalyze, name), name
         assert name in coronalyze.__all__, name
+
+
+def test_template_filter_names_resolve_at_top_level():
+    """PSF-template filter and template-provider names resolve at the package root."""
+    import coronalyze
+
+    for name in (
+        "PSFTemplateFilter",
+        "extract_patch",
+        "AbstractTemplateProvider",
+        "ArrayTemplateProvider",
+        "MatchedFilterPostProc",
+    ):
+        assert hasattr(coronalyze, name), name
+        assert name in coronalyze.__all__, name
+
+
+def test_plain_import_does_not_load_yippy_provider():
+    """Importing coronalyze must not pull in the yippy-backed template provider.
+
+    coronalyze.templates.yippy imports yippy at module scope, so it has to
+    stay unimported until something explicitly reaches for it; that is what
+    keeps the base install yippy-free. Checked in a fresh subprocess so an
+    unrelated test that already imported templates.yippy cannot mask a
+    regression here.
+    """
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys, coronalyze; "
+            "assert 'coronalyze.templates.yippy' not in sys.modules",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr

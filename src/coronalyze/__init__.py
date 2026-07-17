@@ -11,8 +11,10 @@ Primary SNR API (Mawet et al. 2014):
 
 Seam contracts: FrameSet -> AbstractPostProcessing.detect -> DetectionStats.
 
-Matched-filter SNR (matched_filter_snr) and the composable detection estimator
-are exported at the top level.
+Matched-filter SNR (matched_filter_snr), the composable detection estimator,
+and the PSF-template matched filter (PSFTemplateFilter) are exported at the
+top level. YippyTemplateProvider lives in coronalyze.templates.yippy, behind
+the optional yippy extra.
 """
 
 from importlib.metadata import version as _get_version
@@ -42,11 +44,13 @@ from coronalyze.core import (
     GaussianFilter,
     GrubbsTest,
     MatchedFilterSNREstimator,
+    PSFTemplateFilter,
     TwoSampleTTest,
     aperture_photometry,
     aperture_solid_angle,
     calculate_n_apertures,
     circular_aperture_mask,
+    extract_patch,
     flux_map,
     gaussian_filter_2d,
     gaussian_kernel_1d,
@@ -96,10 +100,17 @@ from coronalyze.pipelines import (
 )
 
 # Post-processing seam (interface + arms)
-from coronalyze.postproc import AbstractPostProcessing, MawetPostProcessing
+from coronalyze.postproc import (
+    AbstractPostProcessing,
+    MatchedFilterPostProc,
+    MawetPostProcessing,
+)
 
 # Post-processing configuration
 from coronalyze.pp_config import PPConfig
+
+# Template providers (PSF-template matched filtering)
+from coronalyze.templates import AbstractTemplateProvider, ArrayTemplateProvider
 
 __all__ = [
     # SNR Estimator API (Mawet method)
@@ -117,6 +128,7 @@ __all__ = [
     "AbstractTest",
     "ApertureFilter",
     "GaussianFilter",
+    "PSFTemplateFilter",
     "ApertureSampler",
     "AnnulusSampler",
     "TwoSampleTTest",
@@ -124,6 +136,7 @@ __all__ = [
     "GrubbsTest",
     "gaussian_kernel_1d",
     "gaussian_filter_2d",
+    "extract_patch",
     "matched_filter_snr",
     "matched_filter_snr_estimator",
     "MatchedFilterSNREstimator",
@@ -154,7 +167,11 @@ __all__ = [
     "DetectionStats",
     "AbstractPostProcessing",
     "MawetPostProcessing",
+    "MatchedFilterPostProc",
     "student_t_sf",
+    # Template providers (PSF-template matched filtering)
+    "AbstractTemplateProvider",
+    "ArrayTemplateProvider",
     # Core utilities
     "calculate_n_apertures",
     "flux_map",
