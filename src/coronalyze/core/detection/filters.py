@@ -1,4 +1,4 @@
-"""Concrete detection filters: aperture photometry and Gaussian matched filter."""
+"""Concrete detection filters: aperture, Gaussian, and PSF-template matched."""
 
 import equinox as eqx
 import jax

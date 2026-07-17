@@ -175,10 +175,13 @@ class TestAnnulusSamplerCompositionConservative:
         """Finite statistics and a conservative fpf fraction, pooled over seeds.
 
         The annulus noise sample is raw prepared-image pixels; the template
-        filter's prepare is identity, so its fitted-amplitude null spread is
-        far smaller than the raw-pixel spread, making the Gaussian sigma
-        test strongly conservative for this pairing (never anti-conservative);
-        same-scale references come from ApertureSampler instead.
+        filter's prepare is identity, so the sigma test's scale is set by
+        the template normalization. This stamp is peak-normalized (sum of
+        squared zero-meaned template well above 1), so its fitted-amplitude
+        null spread is far smaller than the raw-pixel spread and the test
+        is strongly conservative HERE; a small-normalization template (e.g.
+        raw coronagraph intensity stamps) flips it anti-conservative.
+        Same-scale references come from ApertureSampler instead.
         """
         provider = ArrayTemplateProvider(_gaussian_stamp())
         est = DetectionEstimator(

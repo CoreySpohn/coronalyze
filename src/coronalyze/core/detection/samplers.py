@@ -91,10 +91,13 @@ class AnnulusSampler(AbstractSampler):
     plus/minus one fwhm, clipped to the chip).
 
     The samples are the prepared image's own pixels, which matches filters
-    whose evaluate() point-samples the prepared map; for filters whose
-    prepare() is the identity (e.g. the PSF-template filter) the resulting
-    sigma test is strongly conservative, and same-scale noise references
-    come from ApertureSampler instead.
+    whose evaluate() point-samples the prepared map. For filters whose
+    prepare() is the identity (e.g. the PSF-template filter) the sigma
+    test's scale is wrong: the filter response's null spread is set by the
+    template normalization (sigma / sqrt(sum of squared zero-meaned
+    template)) while the annulus spread is the raw-pixel sigma, so the test
+    is conservative or anti-conservative depending on that normalization.
+    Same-scale noise references for such filters come from ApertureSampler.
     """
 
     fwhm: float
