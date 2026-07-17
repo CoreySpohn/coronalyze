@@ -89,6 +89,12 @@ class AnnulusSampler(AbstractSampler):
     a 1.5 fwhm disk around the candidate. Negative bounds select the
     automatic annulus of the v1.1.1 matched-filter core (candidate radius
     plus/minus one fwhm, clipped to the chip).
+
+    The samples are the prepared image's own pixels, which matches filters
+    whose evaluate() point-samples the prepared map; for filters whose
+    prepare() is the identity (e.g. the PSF-template filter) the resulting
+    sigma test is strongly conservative, and same-scale noise references
+    come from ApertureSampler instead.
     """
 
     fwhm: float
