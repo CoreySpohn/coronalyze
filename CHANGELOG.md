@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+* `make_simple_disk` now follows the FITS image convention (+column west, east
+  left). A nonzero `pa_deg` that is not a multiple of 90 degrees is mirrored
+  left-right compared with earlier releases.
+
 ## [1.1.1](https://github.com/CoreySpohn/coronalyze/compare/v1.1.0...v1.1.1) (2026-05-26)
 
 

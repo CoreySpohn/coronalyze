@@ -85,6 +85,15 @@ The `snr()` function implements this pattern. 100 candidates run in roughly the 
 
 ## Usage
 
+### Disk Image Orientation
+
+`make_simple_disk` follows the FITS display convention: row index increases
+north and column index increases west. Displaying the array with
+`imshow(origin="lower")` and no axis inversion shows north up and east left.
+The major-axis position angle `pa_deg` is measured from north through east,
+counterclockwise on this image. For example, PA 30 degrees points along
+(column, row) = (-0.5, 0.866), with the opposite end of the ring on the same axis.
+
 ### Basic SNR Calculation
 
 ```python

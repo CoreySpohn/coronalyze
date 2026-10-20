@@ -5,6 +5,8 @@ Run with: pytest tests/test_validation.py -v
 """
 
 import jax.numpy as jnp
+import numpy as np
+import pytest
 from hwoutils.transforms import resample_flux
 
 from coronalyze.analysis.yields import get_photon_noise_map
@@ -17,20 +19,19 @@ class TestRotationDirection:
     def test_rotation_matches_coronagraphoto(self):
         """Positive rotation should match coronagraphoto's behavior.
 
-        Note: Due to inverse mapping, positive rotation_deg rotates
-        the image content CW. This matches coronagraphoto exactly.
+        With origin="lower", positive rotation_deg rotates the image content
+        counterclockwise. This matches coronagraphoto exactly.
         """
-        # Create image with a dot on the Right (East, +X)
+        # Create image with a dot on the right (west, +column).
         img = jnp.zeros((33, 33))
         img = img.at[16, 26].set(1.0)  # Center at (16,16), dot at x=+10
 
         # Apply rotation - should match coronagraphoto
         rotated = resample_flux(img, 1.0, 1.0, (33, 33), rotation_deg=90.0)
 
-        # Due to inverse mapping, +90 deg CCW matrix => image rotates CW
-        # Dot at Right (+X) moves to Bottom (higher Y index)
+        # With origin="lower", +90 deg moves right (west) to up (north).
         peak = jnp.unravel_index(jnp.argmax(rotated), rotated.shape)
-        # Peak should be at y=26 (Bottom), x=16 (Center) for CW rotation
+        # Peak should be at row=26 (north), column=16 (center).
         assert peak == (26, 16), f"Expected (26,16), got {peak}"
 
 
@@ -71,6 +72,44 @@ class TestInjectionCentering:
 
 class TestDiskOrientation:
     """Verify disk position angle follows astronomical convention."""
+
+    @pytest.mark.parametrize("pa_deg", [30.0, 45.0, 90.0, 120.0])
+    def test_major_axis_sky_pa(self, pa_deg):
+        """Measure sky PA from brightness moments with east = -column.
+
+        The 90-degree ring lies along a constant-row line, but its mirror
+        symmetry cannot distinguish the PA sign; the oblique cases can.
+        """
+        disk = np.asarray(
+            make_simple_disk(
+                (161, 161), radius=30, inclination_deg=60, width=4, pa_deg=pa_deg
+            )
+        )
+        row, col = np.indices(disk.shape)
+        total = disk.sum()
+        east = -(col - (disk * col).sum() / total)
+        north = row - (disk * row).sum() / total
+        moments = (
+            np.array(
+                [
+                    [(disk * east**2).sum(), (disk * east * north).sum()],
+                    [(disk * east * north).sum(), (disk * north**2).sum()],
+                ]
+            )
+            / total
+        )
+        _, axes = np.linalg.eigh(moments)
+        major_east, major_north = axes[:, -1]
+        measured_pa = np.degrees(np.arctan2(major_east, major_north)) % 180
+        error_deg = (measured_pa - pa_deg + 90) % 180 - 90
+
+        # The projected width is >= 2 pixels and the image extends > 12
+        # radial sigmas beyond the ring. A 0.1-degree tolerance allows pixel
+        # sampling and float32 roundoff while resolving the mirrored angles.
+        assert abs(error_deg) < 0.1, (
+            f"PA={pa_deg}: measured sky PA={measured_pa:.6f}, "
+            f"error={error_deg:.6f} degrees"
+        )
 
     def test_pa_zero_is_north(self):
         """PA=0 should produce a vertical (North-South) disk."""

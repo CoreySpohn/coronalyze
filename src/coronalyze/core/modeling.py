@@ -61,13 +61,18 @@ def make_simple_disk(
     Analytically projects the disk to avoid interpolation artifacts.
     Flux is normalized so the total integrated flux equals the specified value.
 
+    Image arrays follow the FITS display convention: row index increases north
+    and column index increases west. With imshow(origin="lower") and no axis
+    inversion, north is up and east is left. Astronomical position angle is
+    measured from north through east, counterclockwise on this image.
+
     Args:
         shape: Output image shape (ny, nx).
         radius: Ring radius in pixels.
         inclination_deg: Disk inclination (0 = face-on, 90 = edge-on).
         width: Gaussian width (sigma) of the ring in pixels.
         flux: Total integrated flux of the disk. Default 1.0.
-        pa_deg: Position angle of major axis, measured East of North (degrees).
+        pa_deg: Position angle of major axis, from north through east (degrees).
 
     Returns:
         2D disk image with total flux normalized to the specified value.
@@ -82,8 +87,8 @@ def make_simple_disk(
     x_c = x - cx
 
     # Rotate by position angle
-    # Add 90 degrees so PA=0 aligns with North (Y-axis) per astronomical convention
-    pa_rad = jnp.deg2rad(pa_deg + 90.0)
+    # PA=0 aligns with north (+row); positive PA turns toward east (-column).
+    pa_rad = jnp.deg2rad(90.0 - pa_deg)
     cos_pa = jnp.cos(pa_rad)
     sin_pa = jnp.sin(pa_rad)
     y_rot = y_c * cos_pa + x_c * sin_pa

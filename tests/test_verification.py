@@ -74,17 +74,16 @@ class TestCoordinateConsistency:
     def test_disk_rotation_linkage(self):
         """Verify rotating a 'North' disk (PA=0) by 90deg equals an 'East' disk (PA=90).
 
-        This confirms that the Rotation Convention in `image_transforms`
-        aligns with the Position Angle Convention in `modeling`.
+        A symmetric ring verifies axis alignment, but cannot distinguish the
+        rotation sign. Oblique sky PAs are checked in test_validation.py.
         """
         shape = (101, 101)
 
         # 1. Generate Vertical Disk (PA=0) and rotate 90 deg
-        # (effectively -90 coord rotation)
         disk_north = make_simple_disk(
             shape, radius=30, inclination_deg=80, width=5, pa_deg=0
         )
-        # Note: resample_flux(rot=90) rotates image CW (North -> East)
+        # With origin="lower", +90 rotates CCW (north -> east, -column).
         disk_rotated = resample_flux(disk_north, 1.0, 1.0, shape, rotation_deg=90.0)
 
         # 2. Generate Horizontal Disk (PA=90) directly
