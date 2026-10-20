@@ -165,8 +165,11 @@ def test_whitening_matches_unwhitened_for_uniform_variance():
         np.asarray(without_whitening.statistic),
         rtol=1e-6,
     )
+    # The false-positive fraction is a float32 survival function of the
+    # statistic, which amplifies a one-ulp statistic difference to a few
+    # 1e-6 in relative terms, so it is compared at 1e-5.
     np.testing.assert_allclose(
-        np.asarray(with_whitening.fpf), np.asarray(without_whitening.fpf), rtol=1e-6
+        np.asarray(with_whitening.fpf), np.asarray(without_whitening.fpf), rtol=1e-5
     )
 
 
