@@ -91,9 +91,13 @@ class TestCoordinateConsistency:
             shape, radius=30, inclination_deg=80, width=5, pa_deg=90
         )
 
-        # 3. They should match
-        # (Small tolerance for interpolation smoothing during rotation)
-        assert jnp.allclose(disk_rotated, disk_east, atol=1e-2)
+        # 3. They should match. A 90 deg turn about the center of an odd grid
+        # permutes pixels, so the residual is roundoff; an unrotated or empty
+        # image gives a relative residual of order 1.
+        residual = jnp.linalg.norm(disk_rotated - disk_east) / jnp.linalg.norm(
+            disk_east
+        )
+        assert residual < 1e-6, f"relative residual {float(residual):.2e}"
 
     def test_astrometry_recovery(self):
         """Inject a planet and verify the centroid is recovered at the correct position.
