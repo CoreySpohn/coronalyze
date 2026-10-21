@@ -160,10 +160,13 @@ def test_whitening_matches_unwhitened_for_uniform_variance():
     with_whitening = whitened.detect(fs, positions)
     without_whitening = unwhitened.detect(fs, positions)
 
+    # The statistic is built from float32 weighted sums, whose rounding
+    # depends on the XLA reduction order: jax 0.11.2 and 0.10.2 differ by
+    # 1.4e-6 in relative terms here, so the comparison uses 1e-5.
     np.testing.assert_allclose(
         np.asarray(with_whitening.statistic),
         np.asarray(without_whitening.statistic),
-        rtol=1e-6,
+        rtol=1e-5,
     )
     # The false-positive fraction is a float32 survival function of the
     # statistic, which amplifies a one-ulp statistic difference to a few
