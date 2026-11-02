@@ -121,9 +121,9 @@ from coronalyze import subtract_star, subtract_disk, snr
 import jax.numpy as jnp
 
 # From coronagraphoto
-science = noisy_observation      # counts
-star_model = noiseless_star      # counts (expected)
-disk_model = noiseless_disk      # counts (expected, or zeros)
+science = noisy_observation  # counts
+star_model = noiseless_star  # counts (expected)
+disk_model = noiseless_disk  # counts (expected, or zeros)
 
 # Subtract stellar PSF
 residual = subtract_star(science, star_model)
@@ -146,6 +146,7 @@ import jax
 
 # Pre-compute aperture kernel once
 estimator = snr_estimator(fwhm=3.5, fast=True)
+
 
 # Use in JIT-compiled loop
 @jax.jit
