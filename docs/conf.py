@@ -38,6 +38,16 @@ language = "en"
 
 autoapi_dirs = ["../src"]
 autoapi_ignore = ["**/*version.py"]
+# Document objects at their defining modules. Re-exports such as core.snr
+# otherwise collide with the module of the same name in Sphinx's index.
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "private-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+]
 autodoc_typehints = "description"
 # AutoAPI already indexes fields; Napoleon should render their descriptions only.
 napoleon_use_ivar = True

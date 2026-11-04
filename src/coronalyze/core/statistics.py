@@ -71,9 +71,11 @@ def small_sample_penalty(n: int | jnp.ndarray) -> float:
 def student_t_sf(t: jnp.ndarray, df: jnp.ndarray) -> jnp.ndarray:
     """Upper-tail probability P(T > t) for the Student-t distribution.
 
-    Computed via the regularized incomplete beta function,
-        P(T > t) = 0.5 * I_{df / (df + t^2)}(df / 2, 1 / 2)   for t >= 0,
-    and 1 minus that for t < 0. This is the false positive fraction of a
+    Computed via the regularized incomplete beta function::
+
+        P(T > t) = 0.5 * I_{df / (df + t^2)}(df / 2, 1 / 2)   for t >= 0
+
+    For t < 0, use 1 minus that. This is the false positive fraction of a
     t-distributed detection statistic (Mawet et al. 2014, two-sample t-test
     with n - 1 degrees of freedom).
 
