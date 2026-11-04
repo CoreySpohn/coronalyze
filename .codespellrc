@@ -1,0 +1,4 @@
+[codespell]
+skip = .git,*.ipynb,uv.lock,*/_build,*.fits
+# FPR is the false-positive rate in detection statistics.
+ignore-words-list = fpr
