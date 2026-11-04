@@ -79,6 +79,7 @@ packages = ["src/coronalyze"]
 exclude = ["/data", "/scripts", "/docs", "/tests", "/.github"]
 
 [tool.pytest.ini_options]
+filterwarnings = ["error"]
 markers = [
     "medium: tests with a 30-second default time budget",
     "slow: tests with a 300-second default time budget, run nightly",
