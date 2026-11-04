@@ -13,10 +13,14 @@ from coronalyze.datasets import PIKACHU, fetch_coronagraph
 _CACHED = (PIKACHU.abspath / "coronagraphs.zip").exists()
 _OPTED_IN = os.environ.get("CORONALYZE_FETCH_DATA") == "1"
 
-pytestmark = pytest.mark.skipif(
-    not (_CACHED or _OPTED_IN),
-    reason="eac1 YIP not cached; set CORONALYZE_FETCH_DATA=1 to download",
-)
+# These integration tests require a downloaded PSF dataset.
+pytestmark = [
+    pytest.mark.slow,
+    pytest.mark.skipif(
+        not (_CACHED or _OPTED_IN),
+        reason="eac1 YIP not cached; set CORONALYZE_FETCH_DATA=1 to download",
+    ),
+]
 
 import jax  # noqa: E402
 from yippy import EqxCoronagraph  # noqa: E402
