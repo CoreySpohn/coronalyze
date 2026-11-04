@@ -55,5 +55,5 @@ def test_python_floor_matches_coronagraphoto():
     """Coronalyze must not admit an interpreter coronagraphoto cannot run on."""
     project = tomllib.loads(PYPROJECT.read_text())["project"]
     spec = SpecifierSet(project["requires-python"])
-    assert "3.10" not in spec, f"requires-python {spec} admits Python 3.10"
-    assert "3.11" in spec
+    assert "3.11" not in spec, f"requires-python {spec} admits Python 3.11"
+    assert "3.12" in spec
