@@ -24,6 +24,12 @@ FWHM = 5.0
 MAX_APERTURES = 200
 EXCLUSION_BUFFER = 0.5
 
+# For low-SNR candidates in _scene(4) and _scene(9), 2D versus flat float32
+# annulus reductions shift means near 10 by up to two ULPs. Their std is > 0.2, so
+# cancellation in (signal - mean) / std needs 2 * spacing(10) / 0.2 absolute
+# tolerance. Keep the relative tolerance for std/division rounding unchanged.
+MATCHED_FILTER_SCENE_ATOL = 2 * float(np.spacing(np.float32(10.0))) / 0.2
+
 
 def _gaussian_psf(n: int, fwhm: float = FWHM) -> jnp.ndarray:
     """Center-referenced Gaussian PSF template spanning the image."""
@@ -72,12 +78,12 @@ def _mawet_composed() -> DetectionEstimator:
     )
 
 
-def _assert_parity(actual, expected):
-    """Bitwise equality first; document any relaxation (see plan protocol)."""
+def _assert_parity(actual, expected, *, atol=1e-6):
+    """Bitwise equality first, then allow documented arithmetic roundoff."""
     actual = np.asarray(actual)
     expected = np.asarray(expected)
     if not np.array_equal(actual, expected, equal_nan=True):
-        np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=1e-6)
+        np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=atol)
 
 
 class TestMawetParity:
@@ -172,7 +178,7 @@ class TestMatchedFilterParity:
             image, positions, FWHM, gaussian_kernel_1d(FWHM), 3, -1.0, -1.0
         )
         stats = self._composed()(image, positions)
-        _assert_parity(stats.statistic, golden)
+        _assert_parity(stats.statistic, golden, atol=MATCHED_FILTER_SCENE_ATOL)
         assert bool(jnp.all(jnp.isinf(stats.dof)))
 
     def test_statistic_parity_explicit_annulus(self):
@@ -256,4 +262,8 @@ class TestFrozenApiPinning:
         golden = golden_matched_filter_snr_batch_core(
             image, positions, FWHM, gaussian_kernel_1d(FWHM), 3, -1.0, -1.0
         )
-        _assert_parity(matched_filter_snr(image, positions, FWHM), golden)
+        _assert_parity(
+            matched_filter_snr(image, positions, FWHM),
+            golden,
+            atol=MATCHED_FILTER_SCENE_ATOL,
+        )
