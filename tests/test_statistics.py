@@ -84,7 +84,7 @@ def test_masked_std_uses_bessel_correction():
     values = jnp.array([1.0, 3.0, 100.0])
     mask = jnp.array([1.0, 1.0, 0.0])
     # mean 2.0, residuals +/-1, variance = 2/(2-1) = 2
-    assert float(masked_std(values, mask)) == pytest.approx(jnp.sqrt(2.0), rel=1e-6)
+    assert float(masked_std(values, mask)) == pytest.approx(2.0**0.5, rel=1e-6)
 
 
 class TestNormalSf:
