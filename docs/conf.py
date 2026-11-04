@@ -14,6 +14,7 @@ extensions = [
     "myst_nb",
     "autoapi.extension",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx.ext.mathjax",
@@ -33,18 +34,20 @@ intersphinx_mapping = {
 templates_path = ["_templates"]
 exclude_patterns = ["_build", ".build", "Thumbs.db", ".DS_Store", "jupyter_execute"]
 
-language = "Python"
+language = "en"
 
 autoapi_dirs = ["../src"]
 autoapi_ignore = ["**/*version.py"]
 autodoc_typehints = "description"
+# AutoAPI already indexes fields; Napoleon should render their descriptions only.
+napoleon_use_ivar = True
 
 myst_enable_extensions = ["amsmath", "dollarmath"]
 
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = "sphinx_book_theme"
-html_static_path = ["_static"]
+html_static_path = []
 master_doc = "index"
 html_title = "coronalyze - Post-Processing for Coronagraphic Imaging"
 html_sidebars = {"posts/*": ["sbt-sidebar-nav.html"]}

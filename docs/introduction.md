@@ -96,7 +96,9 @@ counterclockwise on this image. For example, PA 30 degrees points along
 
 ### Basic SNR Calculation
 
-```python
+Requires a residual image from your observation.
+
+```python notest
 from coronalyze import snr
 import jax.numpy as jnp
 
@@ -116,7 +118,9 @@ snr_values = snr(residual, positions, fwhm)
 
 For mission simulations, use the subtraction primitives:
 
-```python
+Requires science, star, and disk images from your simulation.
+
+```python notest
 from coronalyze import subtract_star, subtract_disk, snr
 import jax.numpy as jnp
 
@@ -157,7 +161,9 @@ def process_cube(images, positions):
 
 coronalyze takes plain JAX arrays. It doesn't require coronagraphoto objects:
 
-```python
+Requires a detector readout, planet positions, and resolution element size.
+
+```python notest
 # If you have a DetectorReadout object:
 image = readout.rate  # or readout.readout for counts
 

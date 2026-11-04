@@ -6,6 +6,7 @@
 
 ```{toctree}
 :maxdepth: 2
+introduction
 examples/quickstart.ipynb
 examples/snr_methods.ipynb
 examples/coronagraphoto_pipeline.ipynb

@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://pypi.org/project/coronalyze/"><img src="https://img.shields.io/pypi/v/coronalyze.svg?style=flat-square&logo=pypi" alt="PyPI"/></a>
   <a href="https://coronalyze.readthedocs.io"><img src="https://readthedocs.org/projects/coronalyze/badge/?version=latest&style=flat-square" alt="Documentation Status"/></a>
-  <a href="https://github.com/CoreySpohn/coronalyze/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/CoreySpohn/coronalyze/tests.yml?branch=main&style=flat-square&logo=github&label=tests" alt="Tests"/></a>
+  <a href="https://github.com/CoreySpohn/coronalyze/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/CoreySpohn/coronalyze/ci.yml?branch=main&style=flat-square&logo=github&label=tests" alt="Tests"/></a>
   <a href="https://github.com/CoreySpohn/coronalyze/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://github.com/CoreySpohn/coronalyze"><img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue.svg?style=flat-square&logo=python" alt="Python Versions"></a>
+  <a href="https://github.com/CoreySpohn/coronalyze"><img src="https://img.shields.io/badge/python-3.11%20|%203.12-blue.svg?style=flat-square&logo=python" alt="Python Versions"></a>
 </p>
 
 ---
@@ -29,7 +29,9 @@ pip install coronalyze
 
 ## Quick Start
 
-```python
+Requires a residual image and planet positions from your observation.
+
+```python notest
 import coronalyze as cz
 import jax.numpy as jnp
 
@@ -43,7 +45,9 @@ snr_values = estimator(residual_image, planet_positions)
 
 ## Pairing with coronagraphoto
 
-```python
+Requires your scene, configured coronagraph, settings, and planet positions.
+
+```python notest
 import coronagraphoto as cg
 import coronalyze as cz
 
