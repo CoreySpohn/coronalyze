@@ -30,8 +30,22 @@ docs = [
   "matplotlib",
   "coronagraphoto>=4.2.0",
   "yippy",
+  "optixstuff>=3.0.0",
+  "numpy",
 ]
-test = ["nox", "pytest", "hypothesis", "pytest-cov"]
+test = [
+  "pytest",
+  "hypothesis",
+  "pytest-cov",
+  "pytest-xdist",
+  "pytest-testmon",
+  "pytest-markdown-docs",
+  "pytest-timeout",
+  "pytest-fail-slow",
+  "numpy",
+  "packaging",
+  "yippy>=2.0",
+]
 yippy = ["yippy>=2.0"]
 
 [project.urls]
@@ -63,3 +77,34 @@ packages = ["src/coronalyze"]
 [tool.hatch.build.targets.sdist]
 # Exclude large data files and development artifacts from sdist
 exclude = ["/data", "/scripts", "/docs", "/tests", "/.github"]
+
+[tool.pytest.ini_options]
+markers = [
+    "medium: tests with a 30-second default time budget",
+    "slow: tests with a 300-second default time budget, run nightly",
+]
+
+[tool.testbudget]
+library = "coronalyze"
+mode = "report"
+unit_s = 5
+medium_s = 30
+slow_s = 300
+
+[tool.deptry]
+known_first_party = ["coronalyze"]
+optional_dependencies_dev_groups = ["dev", "docs", "test"]
+
+[tool.deptry.per_rule_ignores]
+# JAX loads its compiled backend dynamically.
+DEP002 = [
+  "jaxlib",
+  # The convenience extra installs the producer for the array-based adapter.
+  "coronagraphoto",
+]
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["src/coronalyze"]
