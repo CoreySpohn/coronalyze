@@ -3,7 +3,7 @@
   <a href="https://coronalyze.readthedocs.io"><img src="https://readthedocs.org/projects/coronalyze/badge/?version=latest&style=flat-square" alt="Documentation Status"/></a>
   <a href="https://github.com/CoreySpohn/coronalyze/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/CoreySpohn/coronalyze/ci.yml?branch=main&style=flat-square&logo=github&label=tests" alt="Tests"/></a>
   <a href="https://github.com/CoreySpohn/coronalyze/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://github.com/CoreySpohn/coronalyze"><img src="https://img.shields.io/badge/python-3.11%20|%203.12-blue.svg?style=flat-square&logo=python" alt="Python Versions"></a>
+  <a href="https://github.com/CoreySpohn/coronalyze"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg?style=flat-square&logo=python" alt="Python Versions"></a>
 </p>
 
 ---
