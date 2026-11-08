@@ -14,7 +14,8 @@ Seam contracts: FrameSet -> AbstractPostProcessing.detect -> DetectionStats.
 Matched-filter SNR (matched_filter_snr), the composable detection estimator,
 and the PSF-template matched filter (PSFTemplateFilter) are exported at the
 top level. YippyTemplateProvider lives in coronalyze.templates.yippy, behind
-the optional yippy extra.
+the optional yippy extra. The experimental calibration tools (candidate
+finding, null counting, injection throughput) live in coronalyze.calibration.
 """
 
 from importlib.metadata import version as _get_version
@@ -43,6 +44,7 @@ from coronalyze.core import (
     DetectionEstimator,
     GaussianFilter,
     GrubbsTest,
+    MapFilter,
     MatchedFilterSNREstimator,
     PSFTemplateFilter,
     TwoSampleTTest,
@@ -128,6 +130,7 @@ __all__ = [
     "AbstractTest",
     "ApertureFilter",
     "GaussianFilter",
+    "MapFilter",
     "PSFTemplateFilter",
     "ApertureSampler",
     "AnnulusSampler",

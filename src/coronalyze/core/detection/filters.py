@@ -92,6 +92,40 @@ class GaussianFilter(AbstractFilter):
         return map_coordinates(filtered, position_yx.reshape(2, 1), order=self.order)[0]
 
 
+class MapFilter(AbstractFilter):
+    """Filter that reads a precomputed statistic map instead of filtering.
+
+    Pass the statistic map (for example a likelihood-ratio z map) to the
+    DetectionEstimator in place of the image: prepare() returns it unchanged
+    and evaluate() samples it with sub-pixel interpolation, so a sampler
+    and test calibrate the map against reference positions on the same ring
+    as each candidate.
+
+    Non-finite map pixels are replaced by zero in prepare() so they cannot
+    poison the reference statistics; mark the same pixels as unusable in the
+    estimator's validity_map so the samplers drop them.
+    """
+
+    order: int = eqx.field(static=True)
+
+    def __init__(self, order: int = 1):
+        """Configure the interpolation.
+
+        Args:
+            order: Interpolation order for sampling the map (0 nearest,
+                1 bilinear).
+        """
+        self.order = order
+
+    def prepare(self, image: jnp.ndarray) -> jnp.ndarray:
+        """The statistic map with non-finite pixels set to zero."""
+        return jnp.where(jnp.isfinite(image), image, 0.0)
+
+    def evaluate(self, filtered: jnp.ndarray, position_yx: jnp.ndarray) -> jnp.ndarray:
+        """Sample the statistic map at one position."""
+        return map_coordinates(filtered, position_yx.reshape(2, 1), order=self.order)[0]
+
+
 class PSFTemplateFilter(AbstractFilter):
     """Position-dependent PSF-template matched filter (local inner product).
 

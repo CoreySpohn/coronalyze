@@ -17,6 +17,7 @@ from coronalyze.core.detection import (
     DetectionEstimator,
     GaussianFilter,
     GrubbsTest,
+    MapFilter,
     PSFTemplateFilter,
     TwoSampleTTest,
     extract_patch,
@@ -84,6 +85,7 @@ __all__ = [
     "exposure_time_for_snr",
     # Composable detection
     "DetectionEstimator",
+    "MapFilter",
     "AbstractFilter",
     "AbstractSampler",
     "AbstractTest",

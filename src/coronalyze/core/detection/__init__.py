@@ -5,6 +5,7 @@ from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.detection.filters import (
     ApertureFilter,
     GaussianFilter,
+    MapFilter,
     PSFTemplateFilter,
     gaussian_filter_2d,
     gaussian_kernel_1d,
@@ -28,6 +29,7 @@ __all__ = [
     "DetectionEstimator",
     "GaussianFilter",
     "GrubbsTest",
+    "MapFilter",
     "PSFTemplateFilter",
     "TwoSampleTTest",
     "extract_patch",
