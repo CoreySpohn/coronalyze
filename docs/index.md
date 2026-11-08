@@ -10,6 +10,7 @@ introduction
 examples/quickstart.ipynb
 examples/snr_methods.ipynb
 examples/coronagraphoto_pipeline.ipynb
+calibration
 ```
 
 ## API Reference
