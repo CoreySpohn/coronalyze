@@ -8,6 +8,14 @@
   left). A nonzero `pa_deg` that is not a multiple of 90 degrees is mirrored
   left-right compared with earlier releases.
 
+## [1.3.0](https://github.com/CoreySpohn/coronalyze/compare/v1.2.0...v1.3.0) (2026-11-12)
+
+
+### Features
+
+* **calibration:** candidate finder, null counting and injection throughput tools ([730daa2](https://github.com/CoreySpohn/coronalyze/commit/730daa20ef24f397fa6c009a0aa387252f0ba86e))
+* **detection:** MapFilter reads a precomputed statistic map ([ca4b869](https://github.com/CoreySpohn/coronalyze/commit/ca4b86988ba34676ad56aec95b22b030e51f9786))
+
 ## [1.2.0](https://github.com/CoreySpohn/coronalyze/compare/v1.1.1...v1.2.0) (2026-11-05)
 
 
