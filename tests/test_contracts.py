@@ -4,6 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import pytest
+from hwoutils.grids import PixelGrid
 
 from coronalyze.contracts import DetectionStats, FrameSet
 
@@ -18,7 +19,7 @@ def make_frameset(n_frames=3, ny=8, nx=8, **overrides):
         fwhm_px=3.0,
         wavelength_nm=550.0,
         bin_width_nm=110.0,
-        pixel_scale_mas=21.8,
+        grid=PixelGrid.regular((ny, nx), 0.0218, "arcsec"),
     )
     kwargs.update(overrides)
     return FrameSet(**kwargs)
@@ -30,7 +31,7 @@ def test_frameset_constructs_with_required_fields():
     assert fs.frames.shape == (3, 8, 8)
     assert fs.noise_variance is None
     assert fs.validity is None
-    assert fs.center_yx is None
+    assert (fs.grid.center_y, fs.grid.center_x) == (3.5, 3.5)
     assert fs.tau_c_s is None
 
 
@@ -172,7 +173,7 @@ def _frameset_kwargs(n_frames=2, ny=8, nx=8):
         fwhm_px=4.0,
         wavelength_nm=550.0,
         bin_width_nm=100.0,
-        pixel_scale_mas=20.0,
+        grid=PixelGrid.regular((ny, nx), 0.020, "arcsec"),
     )
 
 
@@ -185,8 +186,9 @@ class TestOptionalFieldRejection:
         with pytest.raises(ValueError, match="validity"):
             FrameSet(validity=jnp.ones((3, 3)), **kwargs)
 
-    def test_bad_center_shape_rejected(self):
-        """A center_yx that is not shape (2,) raises ValueError."""
+    def test_bad_grid_shape_rejected(self):
+        """A grid not matching the detector frames raises ValueError."""
         kwargs = _frameset_kwargs()
-        with pytest.raises(ValueError, match="center_yx"):
-            FrameSet(center_yx=jnp.ones((3,)), **kwargs)
+        kwargs["grid"] = PixelGrid.regular((3, 3), 0.020, "arcsec")
+        with pytest.raises(ValueError, match=r"grid\.shape"):
+            FrameSet(**kwargs)

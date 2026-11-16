@@ -108,9 +108,6 @@ from coronalyze.postproc import (
     MawetPostProcessing,
 )
 
-# Post-processing configuration
-from coronalyze.pp_config import PPConfig
-
 # Template providers (PSF-template matched filtering)
 from coronalyze.templates import AbstractTemplateProvider, ArrayTemplateProvider
 
@@ -190,6 +187,4 @@ __all__ = [
     "aperture_solid_angle",
     "circular_aperture_mask",
     "soft_aperture_mask",
-    # Post-processing configuration
-    "PPConfig",
 ]

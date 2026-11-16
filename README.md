@@ -45,24 +45,39 @@ snr_values = estimator(residual_image, planet_positions)
 
 ## Pairing with coronagraphoto
 
-Requires your scene, configured coronagraph, settings, and planet positions.
+Requires a system, optical path, bands, frame plan, and sky offsets.
 
 ```python notest
 import coronagraphoto as cg
-import coronalyze as cz
+from hwoutils.grids import SkyOrientation
+from coronalyze.interfaces import analyze_observation, sky_offset_to_position
 
-# Generate image with coronagraphoto
-obs = cg.Observation(scene, coronagraph, settings)
-obs.create_images()
-science_image = obs.get_total_image()
-
-# Get the star model for subtraction
-star_model = obs.get_star_image()
-
-# Subtract and calculate SNR
-residual = cz.subtract_star(science_image, star_model)
-snr_values = cz.snr(residual, planet_positions, fwhm=4.5)
+science_image = cg.observe(
+    key,
+    system,
+    optical_path,
+    bands,
+    plan,
+    time_d=0.0,
+    pointing=SkyOrientation(pa_y_deg=30.0),
+)
+# The caller declares the primary diameter convention used for lambda/D.
+wavelength_nm = 550.0
+frame = optical_path.primary.frame(wavelength_nm, convention="circumscribed")
+position_yx = sky_offset_to_position(science_image, east_arcsec=0.2, north_arcsec=0.1)
+snr_value = analyze_observation(science_image, position_yx, wavelength_nm, frame)
 ```
+
+The adapter uses the first band plane. Pixel `(row j, column i)` has center
+`(x, y) = (i, j)`; the image grid supplies the star center, scale, and sky
+orientation. Core functions still take arrays and pixel coordinates; pass
+`science_image.data[0]` when composing those functions directly.
+
+`FrameSet` takes `grid=science_image.grid` instead of separate scale and
+center values. `noise_variance` remains per-pixel variance in electrons squared.
+`PPConfig` is removed. Analytic residual fractions belong to
+`jaxedith.PostProcessing`, whose explicit `speckle_residual_fraction` is the
+remaining speckle amplitude divided by its unsubtracted amplitude.
 
 ## Design Philosophy
 

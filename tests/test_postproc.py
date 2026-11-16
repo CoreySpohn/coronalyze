@@ -1,11 +1,14 @@
 """Tests for the post-processing seam ABC and the Mawet arm."""
 
+from dataclasses import replace
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
 import pytest
+from hwoutils.grids import PixelGrid
 
 from coronalyze.contracts import DetectionStats, FrameSet
 from coronalyze.core.modeling import inject_planet
@@ -26,7 +29,7 @@ def make_frameset(image, n_frames=1, exposure_time_s=1.0):
         fwhm_px=FWHM_PX,
         wavelength_nm=550.0,
         bin_width_nm=110.0,
-        pixel_scale_mas=21.8,
+        grid=PixelGrid.regular(image.shape, 0.0218, "arcsec"),
     )
 
 
@@ -178,7 +181,7 @@ def test_mawet_arm_coadd_uses_content_differing_frames():
         fwhm_px=FWHM_PX,
         wavelength_nm=550.0,
         bin_width_nm=100.0,
-        pixel_scale_mas=20.0,
+        grid=PixelGrid.regular((n, n), 0.020, "arcsec"),
     )
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)
     stats = arm.detect(fs, planet_pos[None, :])
@@ -190,8 +193,8 @@ def test_mawet_arm_coadd_uses_content_differing_frames():
     assert not np.array_equal(np.asarray(stats.statistic), np.asarray(from_frame0))
 
 
-def test_mawet_arm_center_none_matches_geometric():
-    """center_yx=None stays bit-identical to the explicit geometric center."""
+def test_mawet_arm_grid_center_matches_geometric():
+    """The default grid center equals an explicit geometric center exactly."""
     key = jr.PRNGKey(10)
     image = jr.normal(key, (64, 64))
     positions = jnp.array([[32.0, 48.0], [16.0, 32.0]])
@@ -199,10 +202,9 @@ def test_mawet_arm_center_none_matches_geometric():
     n = fs.frames.shape[1]
     c = (n - 1) / 2.0
     fs_center = eqx.tree_at(
-        lambda f: f.center_yx,
+        lambda f: f.grid,
         fs,
-        jnp.array([c, c]),
-        is_leaf=lambda x: x is None,
+        replace(fs.grid, center_x=c, center_y=c),
     )
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)
     a = arm.detect(fs, positions)
@@ -218,10 +220,9 @@ def test_mawet_arm_consults_off_center():
     positions = jnp.array([[32.0, 48.0], [16.0, 32.0]])
     fs = make_frameset(image)
     fs_off = eqx.tree_at(
-        lambda f: f.center_yx,
+        lambda f: f.grid,
         fs,
-        jnp.array([20.0, 40.0]),
-        is_leaf=lambda x: x is None,
+        replace(fs.grid, center_y=20.0, center_x=40.0),
     )
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)
     a = arm.detect(fs, positions)

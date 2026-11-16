@@ -1,89 +1,76 @@
-"""Interface for coronagraphoto simulation outputs.
-
-Provides adapters to extract analysis-ready data from coronagraphoto
-ExposureConfig and simulation outputs.
-"""
+"""Adapters for coronagraphoto electron Images on shared detector grids."""
 
 import jax.numpy as jnp
+from hwoutils.grids import Frame, Image, PixelGrid
 
-from coronalyze.core.snr import snr
+from coronalyze.core.snr import _composed_mawet, snr_estimator
 
 
-def extract_image(detector_readout: jnp.ndarray) -> jnp.ndarray:
-    """Convert detector readout to an analysis-ready image.
+def extract_image(detector_readout: Image) -> jnp.ndarray:
+    """Return the 2D data, or the first band plane of an observed Image.
 
-    Currently a pass-through, but can be extended to handle:
-    - Multiple detector planes
-    - Unit conversions
-    - Bad pixel masking
-
-    Args:
-        detector_readout: Raw detector output from coronagraphoto simulation.
-
-    Returns:
-        2D image array suitable for analysis.
+    Counts retain their electron units. Geometry remains on detector_readout.grid.
     """
-    # Ensure 2D
-    if detector_readout.ndim > 2:
-        # Take the first plane if datacube
-        return detector_readout[0]
-    return detector_readout
+    if (
+        detector_readout.measure != "per_pixel"
+        or detector_readout.quantity != "electrons"
+    ):
+        raise ValueError("expected per-pixel electron counts")
+    if detector_readout.data.ndim == 2:
+        return detector_readout.data
+    if detector_readout.data.ndim == 3:
+        return detector_readout.data[0]
+    raise ValueError("expected a 2D image or a (band, y, x) observation")
 
 
-def get_fwhm(
-    wavelength_nm: float,
-    diameter_m: float = 6.0,
-    pixel_scale_mas: float = 21.8,
-) -> float:
-    """Calculate the FWHM of the PSF in pixels.
+def get_fwhm(grid: PixelGrid, frame: Frame, wavelength_nm: float) -> float:
+    """Return one lambda/D in pixels on an axis-aligned isotropic grid.
 
-    Uses the diffraction limit: FWHM ~ lambda/D
-
-    Args:
-        wavelength_nm: Observation wavelength in nanometers.
-        diameter_m: Primary aperture diameter in meters.
-        pixel_scale_mas: Pixel scale in milliarcseconds per pixel.
-
-    Returns:
-        FWHM in pixels.
+    frame is supplied by the caller from the primary's diameter convention.
+    A lod grid's own Frame defines its reference angular sampling.
     """
-    # lambda/D in radians
-    wavelength_m = wavelength_nm * 1e-9
-    lambda_over_d_rad = wavelength_m / diameter_m
+    if grid.unit == "arcsec":
+        step_arcsec = grid.step
+    elif grid.unit == "lod":
+        step_arcsec = grid.step * grid.frame.lod_to_arcsec(wavelength_nm)
+    else:
+        raise ValueError("FWHM requires an arcsec or lod grid")
+    return frame.lod_to_arcsec(wavelength_nm) / step_arcsec
 
-    # Convert to milliarcseconds
-    lambda_over_d_mas = lambda_over_d_rad * (180 / jnp.pi) * 3600 * 1000
 
-    # FWHM in pixels
-    fwhm_pixels = lambda_over_d_mas / pixel_scale_mas
+def sky_offset_to_position(
+    image: Image, east_arcsec: float, north_arcsec: float
+) -> jnp.ndarray:
+    """Map sky offsets to (y, x) pixel-center coordinates of an observed Image.
 
-    return fwhm_pixels
+    Pixel (row j, column i) is centered at (x, y) = (i, j). The oriented
+    arcsec grid supplies both the star center and the detector handedness.
+    """
+    grid = image.grid
+    if grid.unit != "arcsec" or grid.orientation is None:
+        raise ValueError("sky offsets require an oriented arcsec detector grid")
+    offset = grid.orientation.sky_to_detector(east_arcsec, north_arcsec)
+    position = grid.unit_to_pixel(offset.x, offset.y)
+    return jnp.stack([position.y, position.x])
 
 
 def analyze_observation(
-    image: jnp.ndarray,
+    image: Image,
     planet_pos: tuple[float, float],
     wavelength_nm: float,
-    diameter_m: float = 6.0,
-    pixel_scale_mas: float = 21.8,
+    frame: Frame,
     max_apertures: int = 200,
 ) -> float:
-    """High-level analysis: compute Mawet SNR for a planet detection.
+    """Compute Mawet SNR in the first band of an observed electron Image.
 
-    Convenience wrapper that combines FWHM calculation with SNR computation.
-
-    Args:
-        image: 2D detector image.
-        planet_pos: Planet position (y, x) in pixels.
-        wavelength_nm: Observation wavelength in nanometers.
-        diameter_m: Primary aperture diameter in meters.
-        pixel_scale_mas: Pixel scale in milliarcseconds per pixel.
-        max_apertures: Maximum buffer size for static array shapes.
-
-    Returns:
-        Signal-to-noise ratio using Mawet 2014 methodology.
+    planet_pos is (y, x) in this image's pixel coordinates, as returned by
+    sky_offset_to_position. The grid supplies the reference-aperture center;
+    frame supplies the primary diameter for one lambda/D at wavelength_nm.
     """
-    fwhm = get_fwhm(wavelength_nm, diameter_m, pixel_scale_mas)
-    # Convert single position to batch format
-    positions = jnp.array([[planet_pos[0], planet_pos[1]]])
-    return snr(image, positions, fwhm, max_apertures=max_apertures)[0]
+    fwhm = get_fwhm(image.grid, frame, wavelength_nm)
+    estimator = snr_estimator(fwhm, max_apertures=max_apertures)
+    center = jnp.array([image.grid.center_y, image.grid.center_x])
+    positions = jnp.asarray(planet_pos)[None, :]
+    return _composed_mawet(estimator)(
+        extract_image(image), positions, center_yx=center
+    ).statistic[0]

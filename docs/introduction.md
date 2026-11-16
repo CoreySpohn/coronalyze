@@ -160,19 +160,49 @@ def process_cube(images, positions):
 
 ### Integration with coronagraphoto
 
-coronalyze takes plain JAX arrays. It doesn't require coronagraphoto objects:
-
-Requires a detector readout, planet positions, and resolution element size.
+The interface accepts the `Image` returned by `coronagraphoto.observe`.
+Its grid carries the sampling and orientation; the caller supplies a `Frame`
+from the primary to define lambda/D. Core routines continue to take arrays.
 
 ```python notest
-# If you have a DetectorReadout object:
-image = readout.rate  # or readout.readout for counts
+from coronalyze.interfaces import analyze_observation, get_fwhm, sky_offset_to_position
 
-# Pass directly to analysis:
-snr_values = snr(image, positions, fwhm)
+frame = optical_path.primary.frame(wavelength_nm, convention="circumscribed")
+position_yx = sky_offset_to_position(observed, east_arcsec=0.2, north_arcsec=0.1)
+fwhm_px = get_fwhm(observed.grid, frame, wavelength_nm)
+snr_value = analyze_observation(observed, position_yx, wavelength_nm, frame)
 ```
 
-This means you can use coronalyze on testbed data, archival observations, or outputs from other simulators—anything that gives you a 2D array.
+`get_fwhm` returns one lambda/D in pixels on an axis-aligned isotropic grid.
+`extract_image(observed)` returns the first band plane as a 2D electron array.
+All pixel coordinates use row j, column i centered at (x, y) = (i, j).
+
+For PSF-template filtering, provide the science grid directly:
+
+```python notest
+from coronalyze.templates.yippy import YippyTemplateProvider
+
+provider = YippyTemplateProvider(
+    coronagraph,
+    observed.grid,
+    stamp_size=21,
+    wavelength_nm=wavelength_nm,
+)
+stamp = provider(position_yx)
+```
+
+The provider uses the coronagraph's `grid` and its `Frame`, including its
+center and full basis. It accepts science grids in arcsec or lambda/D and
+resamples the returned PSF `Image` with the requested interpolation order.
+An unoriented coronagraph grid shares the science detector axes at the given
+pointing. If both grids declare orientations, sampling passes through the sky
+plane. An oriented native grid requires an oriented science grid.
+
+`FrameSet(..., grid=observed.grid)` carries the star center and sampling;
+its `noise_variance` remains per-pixel variance in electrons squared.
+`PPConfig`, `ppfact`, `ez_ppf`, and `n_rolls` configuration fields are removed.
+Analytic post-processing uses explicit residual fractions in
+`jaxedith.PostProcessing`; coronalyze does not depend on jaxedith.
 
 ---
 

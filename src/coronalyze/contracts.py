@@ -15,6 +15,7 @@ Conventions:
 
 import equinox as eqx
 import jax.numpy as jnp
+from hwoutils.grids import PixelGrid
 
 
 def _asarray(value):
@@ -36,14 +37,12 @@ class FrameSet(eqx.Module):
         fwhm_px: Scalar resolution element (lambda/D) in pixels.
         wavelength_nm: Scalar band-center wavelength, nanometers.
         bin_width_nm: Scalar bandwidth, nanometers.
-        pixel_scale_mas: Scalar detector pixel scale, milliarcseconds.
+        grid: Shared PixelGrid carrying detector sampling and star center.
         noise_variance: Optional (n_frames, ny, nx) per-pixel total noise
             variance in electrons^2 (e.g. a detector model's variance budget);
             reserved for inverse-variance weighting (first consumer: the
             PSF-template matched filter).
         validity: Optional (ny, nx) mask (1 = usable pixel, 0 = excluded).
-        center_yx: Optional (2,) star center (y, x); defaults to the geometric
-            center ((ny - 1) / 2, (nx - 1) / 2) when None.
         tau_c_s: Optional speckle decorrelation time, seconds; scalar or
             (ny, nx) map. Reserved for correlated-noise-aware calibration.
     """
@@ -55,12 +54,11 @@ class FrameSet(eqx.Module):
     fwhm_px: jnp.ndarray = eqx.field(converter=_asarray)
     wavelength_nm: jnp.ndarray = eqx.field(converter=_asarray)
     bin_width_nm: jnp.ndarray = eqx.field(converter=_asarray)
-    pixel_scale_mas: jnp.ndarray = eqx.field(converter=_asarray)
+    grid: PixelGrid
     noise_variance: jnp.ndarray | None = eqx.field(
         default=None, converter=_asarray_or_none
     )
     validity: jnp.ndarray | None = eqx.field(default=None, converter=_asarray_or_none)
-    center_yx: jnp.ndarray | None = eqx.field(default=None, converter=_asarray_or_none)
     tau_c_s: jnp.ndarray | None = eqx.field(default=None, converter=_asarray_or_none)
 
     def __check_init__(self):
@@ -89,10 +87,8 @@ class FrameSet(eqx.Module):
             raise ValueError(
                 f"validity must have shape ({ny}, {nx}); got {self.validity.shape}"
             )
-        if self.center_yx is not None and self.center_yx.shape != (2,):
-            raise ValueError(
-                f"center_yx must have shape (2,); got {self.center_yx.shape}"
-            )
+        if self.grid.shape != (ny, nx):
+            raise ValueError("grid.shape must match frames spatial shape")
 
     @property
     def rate_frames(self) -> jnp.ndarray:

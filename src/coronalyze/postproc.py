@@ -63,8 +63,7 @@ class MawetPostProcessing(AbstractPostProcessing):
     statistic is scale-invariant, so it is computed on the exposure-weighted
     coadd regardless of frame count. References are ignored: the noise sample
     comes from the science image itself.
-    FrameSet.center_yx is consulted: reference-aperture geometry is computed
-    about it, with the geometric image center used when it is None.
+    FrameSet.grid supplies the star center for reference-aperture geometry.
     """
 
     estimator: SNREstimator
@@ -110,7 +109,12 @@ class MawetPostProcessing(AbstractPostProcessing):
         del references  # Mawet self-references; see class docstring.
         image = science.coadd()
         composed = _composed_mawet(self.estimator)
-        stats = composed(image, positions_yx, science.validity, science.center_yx)
+        stats = composed(
+            image,
+            positions_yx,
+            science.validity,
+            jnp.array([science.grid.center_y, science.grid.center_x]),
+        )
         return DetectionStats(
             positions_yx=stats.positions_yx,
             statistic=stats.statistic,
@@ -134,8 +138,8 @@ class MatchedFilterPostProc(AbstractPostProcessing):
     variance sum(noise_variance) / sum(exposure_time_s)**2.
 
     References are ignored: the noise sample comes from the science image
-    itself. FrameSet.center_yx is consulted for the reference-aperture
-    geometry; the provider's own center_yx must describe the same star.
+    itself. FrameSet.grid supplies the reference-aperture center; the
+    provider must use the same science grid.
     """
 
     provider: AbstractTemplateProvider
@@ -199,7 +203,12 @@ class MatchedFilterPostProc(AbstractPostProcessing):
             ),
             test=TwoSampleTTest(),
         )
-        stats = composed(image, positions_yx, science.validity, science.center_yx)
+        stats = composed(
+            image,
+            positions_yx,
+            science.validity,
+            jnp.array([science.grid.center_y, science.grid.center_x]),
+        )
         return DetectionStats(
             positions_yx=stats.positions_yx,
             statistic=stats.statistic,

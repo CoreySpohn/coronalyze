@@ -1,9 +1,12 @@
 """Tests for the PSF-template matched-filter post-processing arm."""
 
+from dataclasses import replace
+
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
+from hwoutils.grids import PixelGrid
 
 from coronalyze import ApertureSampler, DetectionEstimator, TwoSampleTTest
 from coronalyze.contracts import DetectionStats, FrameSet
@@ -51,7 +54,7 @@ def make_frameset(
         fwhm_px=FWHM_PX,
         wavelength_nm=550.0,
         bin_width_nm=110.0,
-        pixel_scale_mas=21.8,
+        grid=PixelGrid.regular(shape, 0.0218, "arcsec"),
         noise_variance=noise_variance,
     )
 
@@ -76,7 +79,12 @@ def test_arm_matches_manual_composition_bitwise():
     result = arm.detect(fs, positions)
 
     manual = _manual_composition(provider)
-    expected = manual(fs.coadd(), positions, fs.validity, fs.center_yx)
+    expected = manual(
+        fs.coadd(),
+        positions,
+        fs.validity,
+        jnp.array([fs.grid.center_y, fs.grid.center_x]),
+    )
 
     np.testing.assert_array_equal(
         np.asarray(result.statistic), np.asarray(expected.statistic)
@@ -95,15 +103,14 @@ def test_statistic_kind_and_result_type():
     assert result.statistic_kind == "psf_template_t"
 
 
-def test_center_yx_consulted():
-    """An offset star center changes the statistic vs a None-center FrameSet."""
+def test_grid_center_consulted():
+    """An offset star center changes the statistic vs a geometric-center FrameSet."""
     fs = make_frameset(jr.PRNGKey(102))
     positions = jnp.array([[32.0, 48.0], [16.0, 32.0]])
     fs_off = eqx.tree_at(
-        lambda f: f.center_yx,
+        lambda f: f.grid,
         fs,
-        jnp.array([20.0, 40.0]),
-        is_leaf=lambda x: x is None,
+        replace(fs.grid, center_y=20.0, center_x=40.0),
     )
     provider = ArrayTemplateProvider(_gaussian_stamp())
     arm = MatchedFilterPostProc(provider=provider, fwhm_px=FWHM_PX)
