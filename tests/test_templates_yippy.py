@@ -10,8 +10,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation, resample
-from optixstuff import YippyCoronagraph
-from yippy import fetch_yip
+from yippy import Coronagraph, fetch_yip
 from yippy.datasets import cache_dir
 
 from coronalyze.core.detection.estimator import DetectionEstimator
@@ -116,9 +115,9 @@ def test_peak_within_002_pixel_of_stamp_center(size, unit, rotated):
 
 
 @pytest.fixture(scope="session")
-def coronagraph() -> YippyCoronagraph:
+def coronagraph() -> Coronagraph:
     """Load the eac1 YIP coronagraph once per test session."""
-    return YippyCoronagraph(fetch_yip("eac1_aavc_2d"))
+    return Coronagraph(fetch_yip("eac1_aavc_2d"))
 
 
 @pytest.mark.slow

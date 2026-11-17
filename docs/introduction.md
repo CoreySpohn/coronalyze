@@ -183,10 +183,10 @@ All pixel coordinates use row j, column i centered at (x, y) = (i, j).
 For PSF-template filtering, provide the science grid directly:
 
 ```python notest
-from optixstuff import YippyCoronagraph
+from yippy import Coronagraph
 from coronalyze.templates.yippy import YippyTemplateProvider
 
-coronagraph = YippyCoronagraph("path/to/yip")
+coronagraph = Coronagraph("path/to/yip")
 
 provider = YippyTemplateProvider(
     coronagraph,

@@ -54,7 +54,7 @@ test = [
   "packaging>=23.2",
   "optixstuff>=3.0.0",
 ]
-yippy = ["optixstuff>=3.0.0"]
+yippy = ["optixstuff>=3.0.0", "yippy"]
 
 [project.urls]
 Homepage = "https://github.com/CoreySpohn/coronalyze"
