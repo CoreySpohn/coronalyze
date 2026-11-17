@@ -27,9 +27,7 @@ from coronalyze.core.detection import (
 from coronalyze.core.geometry import (
     calculate_n_apertures,
     generate_aperture_coords,
-    get_center,
     n_reference_apertures,
-    radial_distance,
 )
 
 # Matched filter (Gaussian)
@@ -57,8 +55,6 @@ from coronalyze.core.photometry import (
 # SNR API (Mawet method only)
 from coronalyze.core.snr import (
     SNREstimator,
-    calculate_ccd_snr,
-    exposure_time_for_snr,
     snr,
     snr_estimator,
     snr_map,
@@ -81,8 +77,6 @@ __all__ = [
     "snr_estimator",
     "SNREstimator",
     # CCD-level SNR
-    "calculate_ccd_snr",
-    "exposure_time_for_snr",
     # Composable detection
     "DetectionEstimator",
     "MapFilter",
@@ -107,9 +101,7 @@ __all__ = [
     # Geometry
     "calculate_n_apertures",
     "generate_aperture_coords",
-    "get_center",
     "n_reference_apertures",
-    "radial_distance",
     # PCA
     "get_pca_basis",
     "pca_subtract",

@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 from hwoutils.transforms import resample_flux
 
-from coronalyze.analysis.yields import get_photon_noise_map
 from coronalyze.core.modeling import inject_planet, make_simple_disk
 
 
@@ -146,37 +145,3 @@ class TestDiskOrientation:
         assert var_x > var_y, (
             f"PA=90 produced vertical disk (var_y={var_y:.1f}, var_x={var_x:.1f})"
         )
-
-
-class TestNoiseMapUnits:
-    """Verify noise map handles rate vs counts correctly."""
-
-    def test_photon_noise_rate_units(self):
-        """Rate=100 e/s, t=1s, RN=0 => sigma=10 e/s."""
-        sigma = get_photon_noise_map(
-            expectation_rate=jnp.array([[100.0]]),
-            exposure_time_s=1.0,
-            read_noise_e=0.0,
-        )
-        assert jnp.isclose(sigma[0, 0], 10.0)
-
-    def test_read_noise_scaling_with_time(self):
-        """Rate=0, t=10s, RN=10e => sigma=1 e/s (RN dominates)."""
-        sigma = get_photon_noise_map(
-            expectation_rate=jnp.array([[0.0]]),
-            exposure_time_s=10.0,
-            read_noise_e=10.0,
-        )
-        # sqrt(0 + 100) / 10 = 1
-        assert jnp.isclose(sigma[0, 0], 1.0)
-
-    def test_longer_exposure_reduces_rate_noise(self):
-        """Longer exposure should reduce noise in rate units."""
-        rate = jnp.array([[100.0]])
-
-        sigma_1s = get_photon_noise_map(rate, exposure_time_s=1.0)
-        sigma_100s = get_photon_noise_map(rate, exposure_time_s=100.0)
-
-        # sqrt(100*1)/1 = 10, sqrt(100*100)/100 = 1
-        assert jnp.isclose(sigma_1s[0, 0], 10.0)
-        assert jnp.isclose(sigma_100s[0, 0], 1.0)

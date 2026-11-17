@@ -8,14 +8,16 @@ them from raw arrays; coronalyze algorithms consume and produce them.
 Conventions:
     - Frames are detector electrons per frame (counts), shape
       (n_frames, ny, nx). Rate views divide by per-frame exposure time.
-    - Field names carry unit suffixes (_jd, _s, _deg, _nm, _px, _mas).
+    - Field names carry unit suffixes (_d, _s, _deg, _nm, _px, _mas).
     - Positions are (y, x) pixel coordinates ("_yx"), matching the image
       indexing convention used across the library.
 """
 
 import equinox as eqx
 import jax.numpy as jnp
+from hwoutils.epoch import Epoch
 from hwoutils.grids import PixelGrid
+from hwoutils.spectral import Band
 
 
 def _asarray(value):
@@ -31,12 +33,12 @@ class FrameSet(eqx.Module):
 
     Attributes:
         frames: (n_frames, ny, nx) detector electrons per frame.
-        time_jd: (n_frames,) frame start times, Julian date.
+        time_d: (n_frames,) frame start offsets in days from epoch.
         exposure_time_s: (n_frames,) per-frame exposure times, seconds.
         telescope_pa_deg: (n_frames,) telescope position angle (roll), degrees.
         fwhm_px: Scalar resolution element (lambda/D) in pixels.
-        wavelength_nm: Scalar band-center wavelength, nanometers.
-        bin_width_nm: Scalar bandwidth, nanometers.
+        band: Static wavelength interval in nanometers.
+        epoch: Static host epoch defining the zero of time_d.
         grid: Shared PixelGrid carrying detector sampling and star center.
         noise_variance: Optional (n_frames, ny, nx) per-pixel total noise
             variance in electrons^2 (e.g. a detector model's variance budget);
@@ -48,12 +50,12 @@ class FrameSet(eqx.Module):
     """
 
     frames: jnp.ndarray = eqx.field(converter=_asarray)
-    time_jd: jnp.ndarray = eqx.field(converter=_asarray)
+    time_d: jnp.ndarray = eqx.field(converter=_asarray)
     exposure_time_s: jnp.ndarray = eqx.field(converter=_asarray)
     telescope_pa_deg: jnp.ndarray = eqx.field(converter=_asarray)
     fwhm_px: jnp.ndarray = eqx.field(converter=_asarray)
-    wavelength_nm: jnp.ndarray = eqx.field(converter=_asarray)
-    bin_width_nm: jnp.ndarray = eqx.field(converter=_asarray)
+    band: Band = eqx.field(static=True)
+    epoch: Epoch = eqx.field(static=True)
     grid: PixelGrid
     noise_variance: jnp.ndarray | None = eqx.field(
         default=None, converter=_asarray_or_none
@@ -63,12 +65,16 @@ class FrameSet(eqx.Module):
 
     def __check_init__(self):
         """Validate that field shapes are mutually consistent."""
+        if not isinstance(self.band, Band):
+            raise TypeError("band must be a Band")
+        if not isinstance(self.epoch, Epoch):
+            raise TypeError("epoch must be an Epoch")
         if self.frames.ndim != 3:
             raise ValueError(
                 f"frames must be (n_frames, ny, nx); got shape {self.frames.shape}"
             )
         n_frames, ny, nx = self.frames.shape
-        for name in ("time_jd", "exposure_time_s", "telescope_pa_deg"):
+        for name in ("time_d", "exposure_time_s", "telescope_pa_deg"):
             value = getattr(self, name)
             if value.shape != (n_frames,):
                 raise ValueError(

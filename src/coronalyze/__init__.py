@@ -25,8 +25,6 @@ __version__ = _get_version("coronalyze")
 # Analysis workflows
 from coronalyze.analysis import (
     get_perfect_residuals,
-    get_photon_noise_map,
-    simulate_observation,
 )
 
 # Seam contract types and the post-processing interface
@@ -57,7 +55,6 @@ from coronalyze.core import (
     gaussian_filter_2d,
     gaussian_kernel_1d,
     generate_aperture_coords,
-    get_center,
     get_pca_basis,
     grubbs_fpf,
     inject_planet,
@@ -70,7 +67,6 @@ from coronalyze.core import (
     n_reference_apertures,
     normal_sf,
     pca_subtract,
-    radial_distance,
     small_sample_penalty,
     soft_aperture_mask,
     student_t_sf,
@@ -85,8 +81,6 @@ from coronalyze.core.modeling import (
 # SNR API (Mawet method)
 from coronalyze.core.snr import (
     SNREstimator,
-    calculate_ccd_snr,
-    exposure_time_for_snr,
     snr,
     snr_estimator,
     snr_map,
@@ -118,8 +112,6 @@ __all__ = [
     "snr_estimator",
     "SNREstimator",
     # CCD-level SNR
-    "calculate_ccd_snr",
-    "exposure_time_for_snr",
     # Composable detection (filter / sampler / significance)
     "DetectionEstimator",
     "AbstractFilter",
@@ -156,8 +148,6 @@ __all__ = [
     "make_simple_disk",
     # Yield Analysis
     "get_perfect_residuals",
-    "get_photon_noise_map",
-    "simulate_observation",
     # Example data
     "fetch_all",
     "fetch_coronagraph",
@@ -176,11 +166,9 @@ __all__ = [
     "calculate_n_apertures",
     "flux_map",
     "generate_aperture_coords",
-    "get_center",
     "make_aperture_kernel",
     "masked_mean",
     "masked_std",
-    "radial_distance",
     "small_sample_penalty",
     # Photometry
     "aperture_photometry",

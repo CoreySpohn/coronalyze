@@ -7,43 +7,6 @@ aperture positions with static array shapes for JAX compatibility.
 import jax.numpy as jnp
 
 
-def get_center(shape: tuple[int, int]) -> tuple[float, float]:
-    """Get the center coordinates of an image (0-indexed geometric center).
-
-    For an image of size N, the geometric center is at (N-1)/2.
-    This matches the convention used in modeling.py for planet injection.
-
-    Args:
-        shape: Image shape (ny, nx).
-
-    Returns:
-        Center coordinates (cy, cx).
-    """
-    return ((shape[0] - 1) / 2.0, (shape[1] - 1) / 2.0)
-
-
-def radial_distance(
-    shape: tuple[int, int],
-    center: tuple[float, float] | None = None,
-) -> jnp.ndarray:
-    """Calculate radial distance from center for each pixel.
-
-    Args:
-        shape: Image shape (ny, nx).
-        center: Center coordinates (cy, cx). If None, uses image center.
-
-    Returns:
-        2D array of radial distances in pixels.
-    """
-    ny, nx = shape
-    if center is None:
-        center = get_center(shape)
-    cy, cx = center
-
-    y, x = jnp.ogrid[:ny, :nx]
-    return jnp.sqrt((y - cy) ** 2 + (x - cx) ** 2)
-
-
 def n_reference_apertures(
     radius: jnp.ndarray,
     fwhm: float,

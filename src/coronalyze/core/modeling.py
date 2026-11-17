@@ -8,6 +8,7 @@ import functools
 
 import jax
 import jax.numpy as jnp
+from hwoutils.radial import get_center
 from hwoutils.transforms import shift_image
 
 
@@ -36,8 +37,7 @@ def inject_planet(
         Image with injected planet, same shape as input.
     """
     ny, nx = image.shape
-    # Use (N-1)/2 for correct 0-indexed geometric center
-    cy, cx = (ny - 1) / 2.0, (nx - 1) / 2.0
+    cy, cx = get_center((ny, nx))
 
     # Shift from center to target position
     dy = pos[0] - cy
@@ -78,8 +78,7 @@ def make_simple_disk(
         2D disk image with total flux normalized to the specified value.
     """
     ny, nx = shape
-    # Use (N-1)/2 for correct 0-indexed geometric center
-    cy, cx = (ny - 1) / 2.0, (nx - 1) / 2.0
+    cy, cx = get_center((ny, nx))
     y, x = jnp.mgrid[:ny, :nx]
 
     # Shift to center

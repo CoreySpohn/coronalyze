@@ -74,7 +74,10 @@ orientation. Core functions still take arrays and pixel coordinates; pass
 `science_image.data[0]` when composing those functions directly.
 
 `FrameSet` takes `grid=science_image.grid` instead of separate scale and
-center values. `noise_variance` remains per-pixel variance in electrons squared.
+center values. Pass the wavelength interval as `band=Band(lo_nm, hi_nm)` and
+the host reference epoch as `epoch=Epoch(...)`; `time_d=epoch.days(dates)`
+contains frame start offsets in days. `noise_variance` remains per-pixel
+variance in electrons squared.
 `PPConfig` is removed. Analytic residual fractions belong to
 `jaxedith.PostProcessing`, whose explicit `speckle_residual_fraction` is the
 remaining speckle amplitude divided by its unsubtracted amplitude.

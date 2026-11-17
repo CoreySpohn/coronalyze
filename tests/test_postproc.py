@@ -8,7 +8,10 @@ import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
 import pytest
+from hwoutils.constants import J2000_JD
+from hwoutils.epoch import Epoch
 from hwoutils.grids import PixelGrid
+from hwoutils.spectral import Band
 
 from coronalyze.contracts import DetectionStats, FrameSet
 from coronalyze.core.modeling import inject_planet
@@ -23,12 +26,12 @@ def make_frameset(image, n_frames=1, exposure_time_s=1.0):
     frames = jnp.broadcast_to(image, (n_frames, *image.shape))
     return FrameSet(
         frames=frames,
-        time_jd=jnp.arange(n_frames, dtype=float),
+        time_d=jnp.arange(n_frames, dtype=float),
         exposure_time_s=jnp.full((n_frames,), exposure_time_s),
         telescope_pa_deg=jnp.zeros((n_frames,)),
         fwhm_px=FWHM_PX,
-        wavelength_nm=550.0,
-        bin_width_nm=110.0,
+        band=Band(550.0 - 110.0 / 2, 550.0 + 110.0 / 2),
+        epoch=Epoch(J2000_JD),
         grid=PixelGrid.regular(image.shape, 0.0218, "arcsec"),
     )
 
@@ -175,12 +178,12 @@ def test_mawet_arm_coadd_uses_content_differing_frames():
     exposure = jnp.array([1.0, 3.0])
     fs = FrameSet(
         frames=frames,
-        time_jd=jnp.array([0.0, 1.0]),
+        time_d=jnp.array([0.0, 1.0]),
         exposure_time_s=exposure,
         telescope_pa_deg=jnp.zeros(2),
         fwhm_px=FWHM_PX,
-        wavelength_nm=550.0,
-        bin_width_nm=100.0,
+        band=Band(550.0 - 100.0 / 2, 550.0 + 100.0 / 2),
+        epoch=Epoch(J2000_JD),
         grid=PixelGrid.regular((n, n), 0.020, "arcsec"),
     )
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)

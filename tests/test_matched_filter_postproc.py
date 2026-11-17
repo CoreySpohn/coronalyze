@@ -6,7 +6,10 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
+from hwoutils.constants import J2000_JD
+from hwoutils.epoch import Epoch
 from hwoutils.grids import PixelGrid
+from hwoutils.spectral import Band
 
 from coronalyze import ApertureSampler, DetectionEstimator, TwoSampleTTest
 from coronalyze.contracts import DetectionStats, FrameSet
@@ -48,12 +51,12 @@ def make_frameset(
     frames = jr.normal(key, (n_frames, *shape))
     return FrameSet(
         frames=frames,
-        time_jd=jnp.arange(n_frames, dtype=float),
+        time_d=jnp.arange(n_frames, dtype=float),
         exposure_time_s=jnp.full((n_frames,), exposure_time_s),
         telescope_pa_deg=jnp.zeros((n_frames,)),
         fwhm_px=FWHM_PX,
-        wavelength_nm=550.0,
-        bin_width_nm=110.0,
+        band=Band(550.0 - 110.0 / 2, 550.0 + 110.0 / 2),
+        epoch=Epoch(J2000_JD),
         grid=PixelGrid.regular(shape, 0.0218, "arcsec"),
         noise_variance=noise_variance,
     )

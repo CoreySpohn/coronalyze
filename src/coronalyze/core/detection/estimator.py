@@ -3,6 +3,7 @@
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+from hwoutils.radial import get_center
 
 from coronalyze.contracts import DetectionStats
 from coronalyze.core.detection.base import AbstractFilter, AbstractSampler, AbstractTest
@@ -48,7 +49,7 @@ class DetectionEstimator(eqx.Module):
         if validity_map is None:
             validity_map = jnp.ones((ny, nx))
         if center_yx is None:
-            center = jnp.array([(ny - 1) / 2.0, (nx - 1) / 2.0])
+            center = jnp.array(get_center(image.shape))
         else:
             center = jnp.asarray(center_yx)
 

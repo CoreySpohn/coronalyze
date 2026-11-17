@@ -211,3 +211,34 @@ Analytic post-processing uses explicit residual fractions in
 - `docs/examples/snr_methods.ipynb` – SNR calculation demonstration
 - `tests/test_snr_physics.py` – Physics-based validation tests
 - `docs/examples/coronagraphoto_pipeline.ipynb` – End-to-end example with coronagraphoto
+
+
+Detector count statistics belong to optixstuff; analytic exposure planning belongs
+to jaxedith. Given aperture photon integrands and their wavelength quadrature:
+
+```python
+from jaxedith.calculator import snr, exposure_time
+
+plan = exposure_time(
+    target_snr,
+    rates,
+    detector,
+    quadrature,
+    frame_time_s=100.0,
+    n_pix=n_pix,
+    post_processing=post_processing,
+)
+value = snr(
+    rates, detector, quadrature, plan, n_pix=n_pix, post_processing=post_processing
+)
+electrons = detector.electrons(rates, quadrature)
+mean, variance = detector.mean_and_variance(electrons, plan, n_pix=n_pix)
+# For image integrands (one detector pixel per spatial sample):
+image_electrons = detector.electrons(image_rates, quadrature)
+counts = detector.draw(key, image_electrons, plan)
+```
+
+Construct `FrameSet` with a `Band` interval and an `Epoch` host value. Convert
+absolute dates once on the host with `epoch.days(dates)` and pass those offsets
+as `time_d`; the detector frames remain counts and their variance remains in
+squared electrons.
