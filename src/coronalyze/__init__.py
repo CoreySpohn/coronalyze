@@ -86,9 +86,6 @@ from coronalyze.core.snr import (
     snr_map,
 )
 
-# Example data (via pooch)
-from coronalyze.datasets import fetch_all, fetch_coronagraph, fetch_scene
-
 # Yield pipelines (high-level workflows)
 from coronalyze.pipelines import (
     calculate_yield_snr,
@@ -148,10 +145,6 @@ __all__ = [
     "make_simple_disk",
     # Yield Analysis
     "get_perfect_residuals",
-    # Example data
-    "fetch_all",
-    "fetch_coronagraph",
-    "fetch_scene",
     # Seam contracts (post-processing interface)
     "FrameSet",
     "DetectionStats",

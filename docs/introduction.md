@@ -4,6 +4,9 @@ coronalyze is the analysis companion to coronagraphoto. It handles post-processi
 
 This document covers the conceptual foundation, implementation details, and practical usage.
 
+Example scenes come from `skyscapes.datasets.fetch_scene()` and coronagraph
+YIPs from `yippy.fetch_yip("eac1_aavc_2d")`.
+
 ---
 
 ## Motivation

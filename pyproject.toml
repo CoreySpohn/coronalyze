@@ -22,7 +22,6 @@ dependencies = [
   "jax>=0.8.1",
   "jaxlib>=0.8.1",
   "numpy>=2.0",
-  "pooch>=1.8.0",
 ]
 [project.optional-dependencies]
 coronagraphoto = ["coronagraphoto>=4.2.0"]
@@ -37,6 +36,7 @@ docs = [
   "matplotlib>=3.9",
   "coronagraphoto>=4.2.0",
   "yippy>=2.0",
+  "skyscapes>=4.0.0",
   "optixstuff>=3.0.0",
   "numpy>=2.0",
 ]
