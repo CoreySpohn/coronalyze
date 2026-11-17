@@ -180,7 +180,10 @@ All pixel coordinates use row j, column i centered at (x, y) = (i, j).
 For PSF-template filtering, provide the science grid directly:
 
 ```python notest
+from optixstuff import YippyCoronagraph
 from coronalyze.templates.yippy import YippyTemplateProvider
+
+coronagraph = YippyCoronagraph("path/to/yip")
 
 provider = YippyTemplateProvider(
     coronagraph,
@@ -193,7 +196,8 @@ stamp = provider(position_yx)
 
 The provider uses the coronagraph's `grid` and its `Frame`, including its
 center and full basis. It accepts science grids in arcsec or lambda/D and
-resamples the returned PSF `Image` with the requested interpolation order.
+resamples through `source_psfs(..., grid=...)` using the source Image's
+declared reconstruction. `order` selects interpolation for stamp extraction.
 An unoriented coronagraph grid shares the science detector axes at the given
 pointing. If both grids declare orientations, sampling passes through the sky
 plane. An oriented native grid requires an oriented science grid.

@@ -52,9 +52,9 @@ test = [
   "pytest-fail-slow>=0.1.0",
   "numpy>=2.0",
   "packaging>=23.2",
-  "yippy>=2.0",
+  "optixstuff>=3.0.0",
 ]
-yippy = ["yippy>=2.0"]
+yippy = ["optixstuff>=3.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/CoreySpohn/coronalyze"

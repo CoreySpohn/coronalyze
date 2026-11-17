@@ -9,8 +9,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation
-from yippy import EqxCoronagraph
+from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation, resample
+from optixstuff import YippyCoronagraph
 
 from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.detection.filters import PSFTemplateFilter
@@ -31,21 +31,26 @@ class SyntheticCoronagraph(eqx.Module):
 
     grid: PixelGrid
 
-    def create_psf(self, x_lod, y_lod):
+    def source_psfs(self, wavelength_nm, x_lod, y_lod, *, grid):
         """Return a Gaussian Image at the documented native-grid coordinate."""
         xy = self.grid.coordinates()
-        return Image(
-            jnp.exp(
-                -0.5
-                * (
-                    ((xy.x - x_lod) / (0.35 + 0.04 * x_lod)) ** 2
-                    + ((xy.y - y_lod) / (0.30 + 0.04 * y_lod)) ** 2
-                )
+        x_lod, y_lod = x_lod[:, None, None], y_lod[:, None, None]
+        return resample(
+            Image(
+                jnp.exp(
+                    -0.5
+                    * (
+                        ((xy.x - x_lod) / (0.35 + 0.04 * x_lod)) ** 2
+                        + ((xy.y - y_lod) / (0.30 + 0.04 * y_lod)) ** 2
+                    )
+                ),
+                self.grid,
+                ("source",),
+                "per_pixel",
+                "stellar_flux_fraction",
+                reconstruction="cubic",
             ),
-            self.grid,
-            (),
-            "per_pixel",
-            "stellar_flux_fraction",
+            grid,
         )
 
 
@@ -110,9 +115,9 @@ def test_peak_within_002_pixel_of_stamp_center(size, unit, rotated):
 
 
 @pytest.fixture(scope="session")
-def coronagraph() -> EqxCoronagraph:
+def coronagraph() -> YippyCoronagraph:
     """Load the eac1 YIP coronagraph once per test session."""
-    return EqxCoronagraph(fetch_coronagraph())
+    return YippyCoronagraph(fetch_coronagraph())
 
 
 @pytest.mark.slow

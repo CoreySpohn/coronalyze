@@ -4,16 +4,16 @@ from dataclasses import replace
 
 import equinox as eqx
 import jax.numpy as jnp
-from hwoutils.grids import PixelGrid, resample
+from hwoutils.grids import PixelGrid
 
 from coronalyze.core.detection.patches import extract_patch
 from coronalyze.templates.base import AbstractTemplateProvider
 
 try:
-    from yippy import EqxCoronagraph
-except ImportError as _err:  # pragma: no cover - exercised only without yippy
+    from optixstuff import AbstractCoronagraph
+except ImportError as _err:  # pragma: no cover - exercised only without optixstuff
     raise ImportError(
-        "YippyTemplateProvider requires yippy (>= 2.0); install the extra: "
+        "YippyTemplateProvider requires optixstuff; install the extra: "
         "pip install 'coronalyze[yippy]'"
     ) from _err
 
@@ -28,17 +28,19 @@ class YippyTemplateProvider(AbstractTemplateProvider):
     The returned array is centered at ((stamp_size-1)/2, (stamp_size-1)/2).
     """
 
-    coronagraph: EqxCoronagraph
+    coronagraph: AbstractCoronagraph
     grid: PixelGrid
     stamp_size: int = eqx.field(static=True)
     order: int = eqx.field(static=True)
+    wavelength_nm: float = eqx.field(static=True)
     _science_arcsec: PixelGrid
     _native_arcsec: PixelGrid
+    _target_grid: PixelGrid
     _arcsec_per_lod: float = eqx.field(static=True)
 
     def __init__(
         self,
-        coronagraph: EqxCoronagraph,
+        coronagraph: AbstractCoronagraph,
         grid: PixelGrid,
         stamp_size: int,
         *,
@@ -47,11 +49,11 @@ class YippyTemplateProvider(AbstractTemplateProvider):
     ):
         """Configure stamps for the supplied science grid and wavelength (nm).
 
-        The coronagraph's lod grid defines create_psf offsets. Angular science
+        The coronagraph's lod grid defines source offsets. Angular science
         sampling is converted with the native grid's Frame at wavelength_nm;
         a lod science grid uses its own Frame. No separate scale is accepted.
-        order selects nearest (0), linear (1), or cubic (3) reconstruction
-        for resampling and stamp extraction.
+        order selects nearest (0), linear (1), or cubic (3) stamp extraction.
+        The source Image declares the reconstruction used for resampling.
         """
         if coronagraph.grid.unit != "lod":
             raise ValueError("coronagraph grid must be in lod")
@@ -67,6 +69,7 @@ class YippyTemplateProvider(AbstractTemplateProvider):
         self.grid = grid
         self.stamp_size = int(stamp_size)
         self.order = int(order)
+        self.wavelength_nm = float(wavelength_nm)
         native = coronagraph.grid.to_arcsec(wavelength_nm)
         self._native_arcsec = (
             replace(native, orientation=grid.orientation)
@@ -80,6 +83,17 @@ class YippyTemplateProvider(AbstractTemplateProvider):
             coronagraph.grid.frame.lod_to_arcsec(wavelength_nm)
         )
 
+        self._target_grid = replace(
+            self._science_arcsec,
+            basis=tuple(
+                tuple(v / self._arcsec_per_lod for v in row)
+                for row in self._science_arcsec.basis
+            ),
+            unit="lod",
+            frame=coronagraph.grid.frame,
+            orientation=(grid.orientation if native.orientation is not None else None),
+        )
+
     def __call__(self, position_yx: jnp.ndarray) -> jnp.ndarray:
         """Synthesize an Image, resample its grid, and extract a centered stamp."""
         offset = self._science_arcsec.pixel_to_unit(position_yx[1], position_yx[0])
@@ -90,15 +104,11 @@ class YippyTemplateProvider(AbstractTemplateProvider):
                 sky.east, sky.north
             )
             x, y = native.x, native.y
-        psf = self.coronagraph.create_psf(
-            x / self._arcsec_per_lod, y / self._arcsec_per_lod
+        psfs = self.coronagraph.source_psfs(
+            self.wavelength_nm,
+            jnp.atleast_1d(x / self._arcsec_per_lod),
+            jnp.atleast_1d(y / self._arcsec_per_lod),
+            grid=self._target_grid,
         )
-        angular_psf = replace(psf, grid=self._native_arcsec)
-        sampled = resample(
-            angular_psf,
-            self._science_arcsec,
-            reconstruction={0: "nearest", 1: "linear", 3: "cubic"}[self.order],
-        )
-        return extract_patch(
-            sampled.data, position_yx, self.stamp_size, order=self.order
-        )
+        sampled = psfs.data[0]
+        return extract_patch(sampled, position_yx, self.stamp_size, order=self.order)
