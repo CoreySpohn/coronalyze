@@ -14,9 +14,7 @@ from coronalyze.templates.base import AbstractTemplateProvider
 def gaussian_kernel_1d(fwhm: float) -> jnp.ndarray:
     """Normalized 1D Gaussian kernel for separable matched filtering.
 
-    Identical construction to MatchedFilterSNREstimator (sigma = fwhm/2.355,
-    size = next odd integer >= 6 sigma + 1), kept as the single source of
-    truth for the Gaussian filter kernel.
+    Uses sigma = fwhm / 2.355 and an odd kernel size spanning about six sigma.
 
     Args:
         fwhm: Full width at half maximum in pixels (concrete Python float).

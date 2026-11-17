@@ -29,13 +29,6 @@ from coronalyze.core.geometry import (
     generate_aperture_coords,
     n_reference_apertures,
 )
-
-# Matched filter (Gaussian)
-from coronalyze.core.matched_filter import (
-    MatchedFilterSNREstimator,
-    matched_filter_snr,
-    matched_filter_snr_estimator,
-)
 from coronalyze.core.modeling import (
     inject_planet,
     make_simple_disk,
@@ -51,14 +44,6 @@ from coronalyze.core.photometry import (
     make_aperture_kernel,
     soft_aperture_mask,
 )
-
-# SNR API (Mawet method only)
-from coronalyze.core.snr import (
-    SNREstimator,
-    snr,
-    snr_estimator,
-    snr_map,
-)
 from coronalyze.core.statistics import (
     grubbs_fpf,
     masked_mean,
@@ -71,12 +56,6 @@ from coronalyze.core.statistics import (
 )
 
 __all__ = [
-    # SNR Estimator API (Mawet method)
-    "snr",
-    "snr_map",
-    "snr_estimator",
-    "SNREstimator",
-    # CCD-level SNR
     # Composable detection
     "DetectionEstimator",
     "MapFilter",
@@ -94,10 +73,6 @@ __all__ = [
     "gaussian_kernel_1d",
     "gaussian_filter_2d",
     "extract_patch",
-    # Matched filter (Gaussian)
-    "matched_filter_snr",
-    "matched_filter_snr_estimator",
-    "MatchedFilterSNREstimator",
     # Geometry
     "calculate_n_apertures",
     "generate_aperture_coords",

@@ -7,7 +7,7 @@ for optimization applications.
 import jax
 import jax.numpy as jnp
 
-from coronalyze.core.snr import snr
+from coronalyze.core.detection.estimator import DetectionEstimator
 
 
 def make_simple_image(
@@ -45,7 +45,7 @@ class TestGradients:
         fwhm = 5.0
 
         def loss_fn(img):
-            return -snr(img, planet_pos, fwhm)[0]
+            return -DetectionEstimator.mawet(fwhm)(img, planet_pos).statistic[0]
 
         grad_fn = jax.grad(loss_fn)
         grads = grad_fn(image)
@@ -64,7 +64,7 @@ class TestGradients:
         fwhm = 5.0
 
         def loss_fn(pos):
-            return -snr(image, pos, fwhm)[0]
+            return -DetectionEstimator.mawet(fwhm)(image, pos).statistic[0]
 
         grad_fn = jax.grad(loss_fn)
         grads = grad_fn(planet_pos)
@@ -78,7 +78,9 @@ class TestGradients:
         image, planet_pos = make_simple_image()
         fwhm = 5.0
 
-        jitted_fn = jax.jit(lambda img: snr(img, planet_pos, fwhm)[0])
+        jitted_fn = jax.jit(
+            lambda img: DetectionEstimator.mawet(fwhm)(img, planet_pos).statistic[0]
+        )
 
         # Should not raise
         result = jitted_fn(image)
@@ -92,7 +94,9 @@ class TestGradients:
         planet_pos = jnp.array([[25.0 + 15, 25.0]])
         fwhm = 5.0
 
-        vmapped_fn = jax.vmap(lambda img: snr(img, planet_pos, fwhm)[0])
+        vmapped_fn = jax.vmap(
+            lambda img: DetectionEstimator.mawet(fwhm)(img, planet_pos).statistic[0]
+        )
         results = vmapped_fn(images)
 
         assert results.shape == (batch_size,)
@@ -105,7 +109,7 @@ class TestGradients:
         fwhm = 5.0
 
         def loss_fn(img):
-            return -snr(img, planet_pos, fwhm)[0]
+            return -DetectionEstimator.mawet(fwhm)(img, planet_pos).statistic[0]
 
         initial_loss = loss_fn(image)
 

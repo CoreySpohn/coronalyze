@@ -3,7 +3,7 @@
 import jax.numpy as jnp
 from hwoutils.grids import Frame, Image, PixelGrid
 
-from coronalyze.core.snr import _composed_mawet, snr_estimator
+from coronalyze.core.detection.estimator import DetectionEstimator
 
 
 def extract_image(detector_readout: Image) -> jnp.ndarray:
@@ -68,9 +68,7 @@ def analyze_observation(
     frame supplies the primary diameter for one lambda/D at wavelength_nm.
     """
     fwhm = get_fwhm(image.grid, frame, wavelength_nm)
-    estimator = snr_estimator(fwhm, max_apertures=max_apertures)
+    estimator = DetectionEstimator.mawet(fwhm, max_apertures=max_apertures)
     center = jnp.array([image.grid.center_y, image.grid.center_x])
     positions = jnp.asarray(planet_pos)[None, :]
-    return _composed_mawet(estimator)(
-        extract_image(image), positions, center_yx=center
-    ).statistic[0]
+    return estimator(extract_image(image), positions, center_yx=center).statistic[0]

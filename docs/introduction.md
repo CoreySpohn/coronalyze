@@ -51,8 +51,7 @@ coronalyze/
 ├── core/          # Low-level JAX primitives
 │   ├── geometry.py      # Radial distances, aperture coordinates
 │   ├── photometry.py    # Convolution kernels, flux maps
-│   ├── snr.py           # Mawet SNR, batch versions
-│   ├── matched_filter.py # Experimental matched-filter SNR
+│   ├── detection/      # Composable detection and named configurations
 │   ├── pca.py           # Snapshot KLIP
 │   └── statistics.py    # Masked mean, std, small-sample correction
 ├── pipelines/     # High-level workflows
@@ -61,7 +60,7 @@ coronalyze/
     └── coronagraphoto.py
 ```
 
-The `core/` modules are stateless: pure functions, no classes, no side effects. Everything in `core/` is designed to be traced and JIT-compiled.
+The `core/` modules use JAX functions and Equinox modules. An estimator precomputes its convolution kernel when constructed and can be reused across images.
 
 ### Handling Static Shapes
 
@@ -82,7 +81,7 @@ The naive approach—looping over planet candidates—wastes work because the ex
 1. Compute the flux map (convolution with aperture kernel) **once**.
 2. Use `jax.vmap` to extract values at many (y, x) positions in parallel.
 
-The `snr()` function implements this pattern. 100 candidates run in roughly the time of 1.
+`DetectionEstimator` implements this pattern. Each call returns a statistic, false positive fraction, and degrees of freedom for every requested position.
 
 ---
 
@@ -102,7 +101,7 @@ counterclockwise on this image. For example, PA 30 degrees points along
 Requires a residual image from your observation.
 
 ```python notest
-from coronalyze import snr
+from coronalyze import DetectionEstimator
 import jax.numpy as jnp
 
 # Your post-processed residual image
@@ -114,7 +113,8 @@ positions = jnp.array([[100.5, 120.3]])  # (N, 2) array
 # Resolution element size in pixels
 fwhm = 3.5
 
-snr_values = snr(residual, positions, fwhm)
+stats = DetectionEstimator.mawet(fwhm)(residual, positions)
+snr_values = stats.statistic
 ```
 
 ### Yield Pipelines
@@ -124,7 +124,7 @@ For mission simulations, use the subtraction primitives:
 Requires science, star, and disk images from your simulation.
 
 ```python notest
-from coronalyze import subtract_star, subtract_disk, snr
+from coronalyze import DetectionEstimator, subtract_disk, subtract_star
 import jax.numpy as jnp
 
 # From coronagraphoto
@@ -140,26 +140,30 @@ residual = subtract_disk(residual, disk_model)
 
 # Batch SNR for multiple candidates
 positions = jnp.array([[100.5, 120.3], [100.5, 80.0]])
-snr_values = snr(residual, positions, fwhm=3.5)
+snr_values = DetectionEstimator.mawet(fwhm=3.5)(residual, positions).statistic
 ```
 
 ### High-Performance Pipelines
 
-For iterative pipelines, use the `snr_estimator()` factory:
+Build the estimator once to reuse its kernel in an iterative pipeline:
 
 ```python
-from coronalyze import snr_estimator
+from coronalyze import DetectionEstimator
 import jax
 
 # Pre-compute aperture kernel once
-estimator = snr_estimator(fwhm=3.5, fast=True)
+estimator = DetectionEstimator.mawet(fwhm=3.5, fast=True)
 
 
 # Use in JIT-compiled loop
 @jax.jit
 def process_cube(images, positions):
-    return jax.vmap(lambda img: estimator(img, positions))(images)
+    return jax.vmap(lambda img: estimator(img, positions).statistic)(images)
 ```
+
+Use `estimator.map(image)` to evaluate the statistic at every pixel.
+`DetectionEstimator.matched_filter(fwhm)` uses Gaussian filtering and
+annular noise estimation with the same call signature.
 
 ### Integration with coronagraphoto
 
@@ -221,9 +225,10 @@ Analytic post-processing uses explicit residual fractions in
 
 
 Detector count statistics belong to optixstuff; analytic exposure planning belongs
-to jaxedith. Given aperture photon integrands and their wavelength quadrature:
+to jaxedith. This example uses aperture photon integrands, image photon
+integrands, and their wavelength quadrature from the caller's observation.
 
-```python
+```python notest
 from jaxedith.calculator import snr, exposure_time
 
 plan = exposure_time(

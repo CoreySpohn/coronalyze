@@ -38,8 +38,7 @@ language = "en"
 
 autoapi_dirs = ["../src"]
 autoapi_ignore = ["**/*version.py"]
-# Document objects at their defining modules. Re-exports such as core.snr
-# otherwise collide with the module of the same name in Sphinx's index.
+# Document objects at their defining modules to avoid duplicate index entries.
 autoapi_options = [
     "members",
     "undoc-members",

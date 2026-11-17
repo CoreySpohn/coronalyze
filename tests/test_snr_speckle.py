@@ -12,8 +12,7 @@ import jax.numpy as jnp
 import numpy as np
 from jax.scipy.signal import convolve2d
 
-from coronalyze.core.matched_filter import matched_filter_snr
-from coronalyze.core.snr import snr
+from coronalyze.core.detection.estimator import DetectionEstimator
 
 
 def make_speckle_noise(shape, fwhm, rng_key):
@@ -60,7 +59,9 @@ class TestSNRSpeckle:
         xs = center + rs * np.cos(thetas)
 
         positions_arr = jnp.stack([jnp.array(ys), jnp.array(xs)], axis=1)
-        mf_vals = matched_filter_snr(speckle_img, positions_arr, self.fwhm)
+        mf_vals = DetectionEstimator.matched_filter(self.fwhm)(
+            speckle_img, positions_arr
+        ).statistic
 
         mf_std = float(jnp.std(mf_vals))
         # Matched-filter SNR is expected to be inflated in speckle noise
@@ -83,7 +84,9 @@ class TestSNRSpeckle:
         xs = center + rs * np.cos(thetas)
 
         positions_arr = jnp.stack([jnp.array(ys), jnp.array(xs)], axis=1)
-        mawet_vals = snr(speckle_img, positions_arr, self.fwhm)
+        mawet_vals = DetectionEstimator.mawet(self.fwhm)(
+            speckle_img, positions_arr
+        ).statistic
 
         mawet_std = float(jnp.std(mawet_vals))
         # Mawet should handle correlations better (std closer to 1.0)

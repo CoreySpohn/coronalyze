@@ -4,16 +4,15 @@
 This library provides analysis tools for coronagraphic observations,
 designed as a companion to coronagraphoto.
 
-Primary SNR API (Mawet et al. 2014):
-    - snr(): Calculate SNR at positions
-    - snr_map(): Generate 2D SNR detection map
-    - snr_estimator(): Factory for JIT-ready SNREstimator objects
+DetectionEstimator.mawet and DetectionEstimator.matched_filter build
+JIT-ready estimators for aperture photometry and Gaussian matched filtering.
+Call an estimator at candidate positions or use its map method for a 2D
+statistic image.
 
 Seam contracts: FrameSet -> AbstractPostProcessing.detect -> DetectionStats.
 
-Matched-filter SNR (matched_filter_snr), the composable detection estimator,
-and the PSF-template matched filter (PSFTemplateFilter) are exported at the
-top level. YippyTemplateProvider lives in coronalyze.templates.yippy, behind
+The PSF-template matched filter (PSFTemplateFilter) is exported at the top
+level. YippyTemplateProvider lives in coronalyze.templates.yippy, behind
 the optional yippy extra. The experimental calibration tools (candidate
 finding, null counting, injection throughput) live in coronalyze.calibration.
 """
@@ -43,7 +42,6 @@ from coronalyze.core import (
     GaussianFilter,
     GrubbsTest,
     MapFilter,
-    MatchedFilterSNREstimator,
     PSFTemplateFilter,
     TwoSampleTTest,
     aperture_photometry,
@@ -62,8 +60,6 @@ from coronalyze.core import (
     make_simple_disk,
     masked_mean,
     masked_std,
-    matched_filter_snr,
-    matched_filter_snr_estimator,
     n_reference_apertures,
     normal_sf,
     pca_subtract,
@@ -76,14 +72,6 @@ from coronalyze.core import (
 from coronalyze.core.modeling import (
     subtract_disk,
     subtract_star,
-)
-
-# SNR API (Mawet method)
-from coronalyze.core.snr import (
-    SNREstimator,
-    snr,
-    snr_estimator,
-    snr_map,
 )
 
 # Yield pipelines (high-level workflows)
@@ -103,12 +91,6 @@ from coronalyze.postproc import (
 from coronalyze.templates import AbstractTemplateProvider, ArrayTemplateProvider
 
 __all__ = [
-    # SNR Estimator API (Mawet method)
-    "snr",
-    "snr_map",
-    "snr_estimator",
-    "SNREstimator",
-    # CCD-level SNR
     # Composable detection (filter / sampler / significance)
     "DetectionEstimator",
     "AbstractFilter",
@@ -126,9 +108,6 @@ __all__ = [
     "gaussian_kernel_1d",
     "gaussian_filter_2d",
     "extract_patch",
-    "matched_filter_snr",
-    "matched_filter_snr_estimator",
-    "MatchedFilterSNREstimator",
     "normal_sf",
     "grubbs_fpf",
     "n_reference_apertures",

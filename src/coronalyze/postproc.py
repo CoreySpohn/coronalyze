@@ -20,7 +20,6 @@ from coronalyze.core.detection import (
     PSFTemplateFilter,
     TwoSampleTTest,
 )
-from coronalyze.core.snr import SNREstimator, _composed_mawet
 from coronalyze.templates.base import AbstractTemplateProvider
 
 
@@ -66,7 +65,7 @@ class MawetPostProcessing(AbstractPostProcessing):
     FrameSet.grid supplies the star center for reference-aperture geometry.
     """
 
-    estimator: SNREstimator
+    estimator: DetectionEstimator
 
     def __init__(
         self,
@@ -89,7 +88,7 @@ class MawetPostProcessing(AbstractPostProcessing):
             exclusion_buffer: Gap between test and first reference aperture,
                 in angular-step units.
         """
-        self.estimator = SNREstimator(
+        self.estimator = DetectionEstimator.mawet(
             fwhm=fwhm_px,
             soft=soft,
             sharpness=sharpness,
@@ -108,8 +107,7 @@ class MawetPostProcessing(AbstractPostProcessing):
         """Compute the Mawet t-statistic and FPF on the science coadd."""
         del references  # Mawet self-references; see class docstring.
         image = science.coadd()
-        composed = _composed_mawet(self.estimator)
-        stats = composed(
+        stats = self.estimator(
             image,
             positions_yx,
             science.validity,

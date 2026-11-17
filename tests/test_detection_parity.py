@@ -4,6 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.detection.filters import (
@@ -64,20 +65,6 @@ def _positions(n: int = 101) -> jnp.ndarray:
     )
 
 
-def _mawet_composed() -> DetectionEstimator:
-    """Composed estimator equivalent to SNREstimator(fwhm=FWHM)."""
-    kernel = make_aperture_kernel(radius=FWHM / 2.0, soft=True, sharpness=10.0)
-    return DetectionEstimator(
-        filter=ApertureFilter(kernel=kernel, order=3),
-        sampler=ApertureSampler(
-            fwhm=FWHM,
-            max_apertures=MAX_APERTURES,
-            exclusion_buffer=EXCLUSION_BUFFER,
-        ),
-        test=TwoSampleTTest(),
-    )
-
-
 def _assert_parity(actual, expected, *, atol=1e-6):
     """Bitwise equality first, then allow documented arithmetic roundoff."""
     actual = np.asarray(actual)
@@ -97,7 +84,7 @@ class TestMawetParity:
         golden_snr, golden_n = golden_snr_batch_core(
             image, positions, kernel, FWHM, MAX_APERTURES, 3, EXCLUSION_BUFFER, None
         )
-        stats = _mawet_composed()(image, positions)
+        stats = DetectionEstimator.mawet(FWHM)(image, positions)
         _assert_parity(stats.statistic, golden_snr)
         _assert_parity(stats.dof + 1.0, golden_n.astype(float))
 
@@ -111,14 +98,14 @@ class TestMawetParity:
         golden_snr, golden_n = golden_snr_batch_core(
             image, positions, kernel, FWHM, MAX_APERTURES, 3, EXCLUSION_BUFFER, validity
         )
-        stats = _mawet_composed()(image, positions, validity)
+        stats = DetectionEstimator.mawet(FWHM)(image, positions, validity)
         _assert_parity(stats.statistic, golden_snr)
         _assert_parity(stats.dof + 1.0, golden_n.astype(float))
 
     def test_statistic_parity_randomized(self):
         """Property sweep: random scenes and positions stay at parity."""
         kernel = make_aperture_kernel(radius=FWHM / 2.0, soft=True, sharpness=10.0)
-        composed = _mawet_composed()
+        composed = DetectionEstimator.mawet(FWHM)
         for seed in range(8):
             key = jax.random.PRNGKey(100 + seed)
             k1, k2 = jax.random.split(key)
@@ -136,7 +123,7 @@ class TestMawetParity:
 
     def test_fpf_and_kind_populated(self):
         """The composed path adds finite FPF where the statistic is finite."""
-        stats = _mawet_composed()(_scene(2), _positions())
+        stats = DetectionEstimator.mawet(FWHM)(_scene(2), _positions())
         finite = ~jnp.isnan(stats.statistic)
         assert bool(jnp.all(jnp.isfinite(stats.fpf[finite])))
         assert bool(jnp.all(jnp.isnan(stats.fpf[~finite])))
@@ -144,7 +131,7 @@ class TestMawetParity:
 
     def test_jit_and_grad_through_composed(self):
         """The composed estimator jits and differentiates through the image."""
-        composed = _mawet_composed()
+        composed = DetectionEstimator.mawet(FWHM)
         image = _scene(3)
         positions = _positions()[:2]
 
@@ -162,14 +149,6 @@ class TestMawetParity:
 class TestMatchedFilterParity:
     """Composed Gaussian+Annulus+Sigma equals the fused matched-filter core."""
 
-    def _composed(self, inner: float = -1.0, outer: float = -1.0):
-        """Composed estimator equivalent to MatchedFilterSNREstimator."""
-        return DetectionEstimator(
-            filter=GaussianFilter(kernel_1d=gaussian_kernel_1d(FWHM), order=3),
-            sampler=AnnulusSampler(fwhm=FWHM, annulus_inner=inner, annulus_outer=outer),
-            test=AnnulusSigmaTest(),
-        )
-
     def test_statistic_parity_on_scene(self):
         """Statistics match the golden matched-filter core (auto annulus)."""
         image = _scene(4)
@@ -177,7 +156,7 @@ class TestMatchedFilterParity:
         golden = golden_matched_filter_snr_batch_core(
             image, positions, FWHM, gaussian_kernel_1d(FWHM), 3, -1.0, -1.0
         )
-        stats = self._composed()(image, positions)
+        stats = DetectionEstimator.matched_filter(FWHM)(image, positions)
         _assert_parity(stats.statistic, golden, atol=MATCHED_FILTER_SCENE_ATOL)
         assert bool(jnp.all(jnp.isinf(stats.dof)))
 
@@ -188,12 +167,14 @@ class TestMatchedFilterParity:
         golden = golden_matched_filter_snr_batch_core(
             image, positions, FWHM, gaussian_kernel_1d(FWHM), 3, 12.0, 20.0
         )
-        stats = self._composed(12.0, 20.0)(image, positions)
+        stats = DetectionEstimator.matched_filter(
+            FWHM, annulus_inner=12.0, annulus_outer=20.0
+        )(image, positions)
         _assert_parity(stats.statistic, golden)
 
     def test_statistic_parity_randomized(self):
         """Property sweep for the matched-filter pairing."""
-        composed = self._composed()
+        composed = DetectionEstimator.matched_filter(FWHM)
         for seed in range(6):
             image = jax.random.normal(jax.random.PRNGKey(200 + seed), (101, 101))
             r = jax.random.uniform(
@@ -219,7 +200,7 @@ class TestCenterThreading:
         """Passing the geometric center explicitly is bit-identical to None."""
         image = _scene(6)
         positions = _positions()
-        composed = _mawet_composed()
+        composed = DetectionEstimator.mawet(FWHM)
         c = (image.shape[0] - 1) / 2.0
         a = composed(image, positions)
         b = composed(image, positions, None, jnp.array([c, c]))
@@ -229,7 +210,7 @@ class TestCenterThreading:
         """A shifted star center changes the reference geometry."""
         image = _scene(7)
         positions = _positions()[:3]
-        composed = _mawet_composed()
+        composed = DetectionEstimator.mawet(FWHM)
         a = composed(image, positions)
         b = composed(image, positions, None, jnp.array([40.0, 55.0]))
         assert not np.array_equal(
@@ -237,33 +218,79 @@ class TestCenterThreading:
         )
 
 
-class TestFrozenApiPinning:
-    """Public frozen APIs reproduce the golden cores after delegation."""
+def _assert_bitwise_stats(actual, expected):
+    """Compare raw float bits, including any NaNs."""
+    for field in ("statistic", "fpf", "dof"):
+        actual_field = np.asarray(getattr(actual, field))
+        expected_field = np.asarray(getattr(expected, field))
+        assert actual_field.dtype == expected_field.dtype
+        np.testing.assert_array_equal(
+            actual_field.view(np.uint8), expected_field.view(np.uint8), err_msg=field
+        )
 
-    def test_snr_equals_golden_core(self):
-        """snr() output is unchanged by the delegation refactor."""
-        from coronalyze.core.photometry import make_aperture_kernel
-        from coronalyze.core.snr import snr
 
+class TestNamedConstructorParity:
+    """Named configurations preserve the previous detection outputs."""
+
+    @pytest.mark.parametrize(
+        "options",
+        [
+            {},
+            {
+                "soft": True,
+                "sharpness": 5.0,
+                "fast": True,
+                "max_apertures": 32,
+                "exclusion_buffer": 1.0,
+            },
+            {"soft": False},
+        ],
+    )
+    def test_mawet_constructor_preserves_detection_stats(self, options):
+        """Mawet preserves statistics, FPF, and dof at candidate positions."""
         image = _scene(8)
         positions = _positions()
-        kernel = make_aperture_kernel(radius=FWHM / 2.0, soft=True, sharpness=10.0)
-        golden, _ = golden_snr_batch_core(
-            image, positions, kernel, FWHM, MAX_APERTURES, 3, EXCLUSION_BUFFER, None
-        )
-        _assert_parity(snr(image, positions, FWHM), golden)
+        validity = jnp.ones_like(image).at[:, :30].set(0.0) if options else None
+        expected = DetectionEstimator(
+            filter=ApertureFilter(
+                kernel=make_aperture_kernel(
+                    radius=FWHM / 2.0,
+                    soft=options.get("soft", True),
+                    sharpness=options.get("sharpness", 10.0),
+                ),
+                order=1 if options.get("fast", False) else 3,
+            ),
+            sampler=ApertureSampler(
+                fwhm=FWHM,
+                max_apertures=options.get("max_apertures", MAX_APERTURES),
+                exclusion_buffer=options.get("exclusion_buffer", EXCLUSION_BUFFER),
+            ),
+            test=TwoSampleTTest(),
+        )(image, positions, validity)
+        actual = DetectionEstimator.mawet(FWHM, **options)(image, positions, validity)
+        _assert_bitwise_stats(actual, expected)
 
-    def test_matched_filter_snr_equals_golden_core(self):
-        """matched_filter_snr() output is unchanged by the delegation."""
-        from coronalyze.core.matched_filter import matched_filter_snr
-
+    @pytest.mark.parametrize(
+        "inner, outer, fast", [(None, None, False), (12.0, 20.0, True)]
+    )
+    def test_matched_filter_constructor_preserves_detection_stats(
+        self, inner, outer, fast
+    ):
+        """The matched filter preserves auto and explicitly configured annuli."""
         image = _scene(9)
         positions = _positions()
-        golden = golden_matched_filter_snr_batch_core(
-            image, positions, FWHM, gaussian_kernel_1d(FWHM), 3, -1.0, -1.0
-        )
-        _assert_parity(
-            matched_filter_snr(image, positions, FWHM),
-            golden,
-            atol=MATCHED_FILTER_SCENE_ATOL,
-        )
+        expected = DetectionEstimator(
+            filter=GaussianFilter(
+                kernel_1d=gaussian_kernel_1d(FWHM), order=1 if fast else 3
+            ),
+            sampler=AnnulusSampler(
+                fwhm=FWHM,
+                annulus_inner=-1.0 if inner is None else inner,
+                annulus_outer=-1.0 if outer is None else outer,
+            ),
+            test=AnnulusSigmaTest(),
+        )(image, positions)
+        actual = DetectionEstimator.matched_filter(
+            FWHM, fast=fast, annulus_inner=inner, annulus_outer=outer
+        )(image, positions)
+        _assert_bitwise_stats(actual, expected)

@@ -13,8 +13,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from coronalyze.core.matched_filter import matched_filter_snr
-from coronalyze.core.snr import snr
+from coronalyze.core.detection.estimator import DetectionEstimator
 
 
 def make_gaussian_psf(shape, center, fwhm, total_flux):
@@ -47,8 +46,14 @@ class TestSNRPhysics:
         )
         img_bg = img_clean + 5000.0  # Add constant background
 
-        snr_clean = float(matched_filter_snr(img_clean, self.pos, self.fwhm)[0])
-        snr_bg = float(matched_filter_snr(img_bg, self.pos, self.fwhm)[0])
+        snr_clean = float(
+            DetectionEstimator.matched_filter(self.fwhm)(img_clean, self.pos).statistic[
+                0
+            ]
+        )
+        snr_bg = float(
+            DetectionEstimator.matched_filter(self.fwhm)(img_bg, self.pos).statistic[0]
+        )
 
         rel_diff = abs(snr_clean - snr_bg) / max(abs(snr_clean), 1e-10)
         assert rel_diff < 0.01, f"SNR changed by {rel_diff * 100:.2f}% with background"
@@ -68,8 +73,12 @@ class TestSNRPhysics:
             self.shape, (70.0, 50.0), self.fwhm, base_flux * 2
         )
 
-        snr_1x = float(matched_filter_snr(img_1x, self.pos, self.fwhm)[0])
-        snr_2x = float(matched_filter_snr(img_2x, self.pos, self.fwhm)[0])
+        snr_1x = float(
+            DetectionEstimator.matched_filter(self.fwhm)(img_1x, self.pos).statistic[0]
+        )
+        snr_2x = float(
+            DetectionEstimator.matched_filter(self.fwhm)(img_2x, self.pos).statistic[0]
+        )
 
         ratio = snr_2x / snr_1x
         assert 1.8 < ratio < 2.2, f"Linearity broken: ratio={ratio:.3f}, expected ~2.0"
@@ -83,8 +92,10 @@ class TestSNRPhysics:
         img = jax.random.normal(rng, self.shape) * noise_sigma
         img = img + make_gaussian_psf(self.shape, (70.0, 50.0), self.fwhm, flux)
 
-        mf_snr = float(matched_filter_snr(img, self.pos, self.fwhm)[0])
-        m_snr = float(snr(img, self.pos, self.fwhm)[0])
+        mf_snr = float(
+            DetectionEstimator.matched_filter(self.fwhm)(img, self.pos).statistic[0]
+        )
+        m_snr = float(DetectionEstimator.mawet(self.fwhm)(img, self.pos).statistic[0])
 
         ratio = mf_snr / m_snr
         assert 0.8 <= ratio <= 2.0, (
@@ -107,7 +118,9 @@ class TestSNRPhysics:
         xs = center + rs * np.cos(thetas)
 
         positions_arr = jnp.stack([jnp.array(ys), jnp.array(xs)], axis=1)
-        mf_vals = matched_filter_snr(noise_img, positions_arr, self.fwhm)
+        mf_vals = DetectionEstimator.matched_filter(self.fwhm)(
+            noise_img, positions_arr
+        ).statistic
 
         mf_std = float(jnp.std(mf_vals))
         assert 0.7 < mf_std < 1.5, f"Matched-filter SNR std={mf_std:.3f}, expected ~1.0"
@@ -128,7 +141,9 @@ class TestSNRPhysics:
         xs = center + rs * np.cos(thetas)
 
         positions_arr = jnp.stack([jnp.array(ys), jnp.array(xs)], axis=1)
-        mawet_vals = snr(noise_img, positions_arr, self.fwhm)
+        mawet_vals = DetectionEstimator.mawet(self.fwhm)(
+            noise_img, positions_arr
+        ).statistic
 
         mawet_std = float(jnp.std(mawet_vals))
         assert 0.7 < mawet_std < 1.5, f"Mawet SNR std={mawet_std:.3f}, expected ~1.0"

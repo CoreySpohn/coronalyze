@@ -185,9 +185,6 @@ def test_detection_core_names_resolve_at_top_level():
         "normal_sf",
         "grubbs_fpf",
         "n_reference_apertures",
-        "matched_filter_snr",
-        "matched_filter_snr_estimator",
-        "MatchedFilterSNREstimator",
         "gaussian_kernel_1d",
         "gaussian_filter_2d",
     ):

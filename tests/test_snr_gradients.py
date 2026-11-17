@@ -9,8 +9,7 @@ Run with: pytest tests/test_snr_gradients.py -v
 import jax
 import jax.numpy as jnp
 
-from coronalyze.core.matched_filter import matched_filter_snr
-from coronalyze.core.snr import snr
+from coronalyze.core.detection.estimator import DetectionEstimator
 
 
 class TestSNRGradients:
@@ -31,7 +30,9 @@ class TestSNRGradients:
         img = self._make_test_image()
 
         def loss(image):
-            return -matched_filter_snr(image, self.pos, self.fwhm)[0]
+            return -DetectionEstimator.matched_filter(self.fwhm)(
+                image, self.pos
+            ).statistic[0]
 
         grad = jax.grad(loss)(img)
         gnorm = float(jnp.linalg.norm(grad))
@@ -44,7 +45,7 @@ class TestSNRGradients:
         img = self._make_test_image()
 
         def loss(image):
-            return -snr(image, self.pos, self.fwhm)[0]
+            return -DetectionEstimator.mawet(self.fwhm)(image, self.pos).statistic[0]
 
         grad = jax.grad(loss)(img)
         gnorm = float(jnp.linalg.norm(grad))
@@ -57,7 +58,9 @@ class TestSNRGradients:
         img = self._make_test_image()
 
         def snr_value(image):
-            return matched_filter_snr(image, self.pos, self.fwhm)[0]
+            return DetectionEstimator.matched_filter(self.fwhm)(
+                image, self.pos
+            ).statistic[0]
 
         grad = jax.grad(snr_value)(img)
         # Gradient at planet center should be positive (increasing flux increases SNR)
@@ -68,7 +71,7 @@ class TestSNRGradients:
         img = self._make_test_image()
 
         def snr_value(image):
-            return snr(image, self.pos, self.fwhm)[0]
+            return DetectionEstimator.mawet(self.fwhm)(image, self.pos).statistic[0]
 
         grad = jax.grad(snr_value)(img)
         # Gradient at planet center should be positive

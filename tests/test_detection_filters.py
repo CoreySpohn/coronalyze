@@ -12,7 +12,6 @@ from coronalyze.core.detection.filters import (
     gaussian_filter_2d,
     gaussian_kernel_1d,
 )
-from coronalyze.core.matched_filter import MatchedFilterSNREstimator
 from coronalyze.core.photometry import flux_map, make_aperture_kernel
 
 
@@ -65,12 +64,13 @@ class TestApertureFilter:
 class TestGaussianFilter:
     """Gaussian filter reproduces the matched-filter preprocessing."""
 
-    def test_kernel_matches_frozen_estimator(self):
-        """gaussian_kernel_1d equals MatchedFilterSNREstimator's kernel."""
-        est = MatchedFilterSNREstimator(fwhm=4.0)
-        np.testing.assert_array_equal(
-            np.asarray(gaussian_kernel_1d(4.0)), np.asarray(est.kernel_1d)
-        )
+    def test_kernel_is_centered_and_normalized(self):
+        """The Gaussian kernel has the expected support and preserves flux."""
+        kernel = np.asarray(gaussian_kernel_1d(4.0))
+        assert kernel.shape == (11,)
+        assert np.argmax(kernel) == 5
+        np.testing.assert_array_equal(kernel, kernel[::-1])
+        np.testing.assert_allclose(kernel.sum(), 1.0)
 
     def test_prepare_uses_separable_convolution(self):
         """prepare() equals gaussian_filter_2d on the same kernel."""

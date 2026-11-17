@@ -1,5 +1,7 @@
 """The composed detection estimator: filter + sampler + significance test."""
 
+from typing import Self
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -7,6 +9,14 @@ from hwoutils.radial import get_center
 
 from coronalyze.contracts import DetectionStats
 from coronalyze.core.detection.base import AbstractFilter, AbstractSampler, AbstractTest
+from coronalyze.core.detection.filters import (
+    ApertureFilter,
+    GaussianFilter,
+    gaussian_kernel_1d,
+)
+from coronalyze.core.detection.samplers import AnnulusSampler, ApertureSampler
+from coronalyze.core.detection.significance import AnnulusSigmaTest, TwoSampleTTest
+from coronalyze.core.photometry import make_aperture_kernel
 
 
 class DetectionEstimator(eqx.Module):
@@ -23,6 +33,69 @@ class DetectionEstimator(eqx.Module):
     filter: AbstractFilter
     sampler: AbstractSampler
     test: AbstractTest
+
+    @classmethod
+    def mawet(
+        cls,
+        fwhm: float,
+        soft: bool = True,
+        sharpness: float = 10.0,
+        fast: bool = False,
+        max_apertures: int = 200,
+        exclusion_buffer: float = 0.5,
+    ) -> Self:
+        """Build the Mawet et al. (2014) aperture-photometry t-test.
+
+        Args:
+            fwhm: Aperture diameter in pixels.
+            soft: Use differentiable soft aperture edges.
+            sharpness: Sigmoid sharpness of soft aperture edges.
+            fast: Use bilinear interpolation instead of cubic.
+            max_apertures: Static reference-aperture buffer size.
+            exclusion_buffer: Gap between the candidate and first reference
+                aperture, in units of the angular step.
+        """
+        kernel = make_aperture_kernel(radius=fwhm / 2.0, soft=soft, sharpness=sharpness)
+        return cls(
+            filter=ApertureFilter(kernel=kernel, order=1 if fast else 3),
+            sampler=ApertureSampler(
+                fwhm=fwhm,
+                max_apertures=max_apertures,
+                exclusion_buffer=exclusion_buffer,
+            ),
+            test=TwoSampleTTest(),
+        )
+
+    @classmethod
+    def matched_filter(
+        cls,
+        fwhm: float,
+        fast: bool = False,
+        *,
+        annulus_inner: float | None = None,
+        annulus_outer: float | None = None,
+    ) -> Self:
+        """Build a Gaussian matched filter with annular noise estimation.
+
+        Args:
+            fwhm: Gaussian full width at half maximum in pixels.
+            fast: Use bilinear interpolation instead of cubic.
+            annulus_inner: Inner radius of the noise annulus in pixels.
+                None selects the automatic bound.
+            annulus_outer: Outer radius of the noise annulus in pixels.
+                None selects the automatic bound.
+        """
+        return cls(
+            filter=GaussianFilter(
+                kernel_1d=gaussian_kernel_1d(fwhm), order=1 if fast else 3
+            ),
+            sampler=AnnulusSampler(
+                fwhm=fwhm,
+                annulus_inner=-1.0 if annulus_inner is None else annulus_inner,
+                annulus_outer=-1.0 if annulus_outer is None else annulus_outer,
+            ),
+            test=AnnulusSigmaTest(),
+        )
 
     @eqx.filter_jit
     def __call__(
@@ -74,3 +147,22 @@ class DetectionEstimator(eqx.Module):
             fwhm_px=self.sampler.fwhm,
             statistic_kind=self.test.kind,
         )
+
+    def map(
+        self,
+        image: jnp.ndarray,
+        validity_map: jnp.ndarray | None = None,
+        center_yx: jnp.ndarray | None = None,
+    ) -> jnp.ndarray:
+        """Return the detection statistic at every pixel, in image shape.
+
+        Args:
+            image: 2D science image.
+            validity_map: Optional (ny, nx) mask (1 = usable, 0 = excluded).
+            center_yx: Optional (2,) star center; geometric center when None.
+        """
+        ny, nx = image.shape
+        y_coords, x_coords = jnp.meshgrid(jnp.arange(ny), jnp.arange(nx), indexing="ij")
+        positions_yx = jnp.stack([y_coords.ravel(), x_coords.ravel()], axis=1)
+        stats = self(image, positions_yx, validity_map, center_yx)
+        return stats.statistic.reshape(image.shape)

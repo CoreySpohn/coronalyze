@@ -6,7 +6,7 @@ expected behavior.
 
 import jax.numpy as jnp
 
-from coronalyze.core.snr import snr
+from coronalyze.core.detection.estimator import DetectionEstimator
 
 
 def make_test_image(
@@ -50,7 +50,7 @@ class TestMawetSNR:
         image, planet_pos = make_test_image(planet_flux=1000.0)
         fwhm = 5.0
 
-        snr_val = snr(image, planet_pos, fwhm)[0]
+        snr_val = DetectionEstimator.mawet(fwhm)(image, planet_pos).statistic[0]
 
         assert snr_val > 0, f"Expected positive SNR, got {snr_val}"
 
@@ -71,7 +71,7 @@ class TestMawetSNR:
                 noise = jax.random.normal(key, (101, 101)) * 10.0
                 image, planet_pos = make_test_image(planet_flux=float(flux))
                 image = image + noise
-                snr_val = snr(image, planet_pos, fwhm)[0]
+                snr_val = DetectionEstimator.mawet(fwhm)(image, planet_pos).statistic[0]
                 snr_samples.append(float(snr_val))
             mean_snrs.append(jnp.mean(jnp.array(snr_samples)))
 
@@ -91,11 +91,15 @@ class TestMawetSNR:
 
         # At small radius (few apertures)
         image_small, pos_small = make_test_image(planet_radius=10.0, planet_flux=500.0)
-        snr_small_radius = snr(image_small, pos_small, fwhm)[0]
+        snr_small_radius = DetectionEstimator.mawet(fwhm)(
+            image_small, pos_small
+        ).statistic[0]
 
         # At large radius (many apertures)
         image_large, pos_large = make_test_image(planet_radius=30.0, planet_flux=500.0)
-        snr_large_radius = snr(image_large, pos_large, fwhm)[0]
+        snr_large_radius = DetectionEstimator.mawet(fwhm)(
+            image_large, pos_large
+        ).statistic[0]
 
         # Small sample penalty should reduce SNR at small radii
         # (assuming same intrinsic SNR)
@@ -108,7 +112,7 @@ class TestMawetSNR:
         image, planet_pos = make_test_image()
         fwhm = 5.0
 
-        snr_val = snr(image, planet_pos, fwhm)[0]
+        snr_val = DetectionEstimator.mawet(fwhm)(image, planet_pos).statistic[0]
 
         assert jnp.isfinite(snr_val), f"SNR should be finite, got {snr_val}"
 
@@ -124,7 +128,7 @@ class TestMawetSNR:
         )  # Position where we check for "detection"
         fwhm = 5.0
 
-        snr_val = snr(image, planet_pos, fwhm)[0]
+        snr_val = DetectionEstimator.mawet(fwhm)(image, planet_pos).statistic[0]
 
         # Should be close to zero (within noise)
         assert abs(snr_val) < 1.0, f"SNR for no planet should be ~0, got {snr_val}"

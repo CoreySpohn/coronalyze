@@ -179,13 +179,13 @@ class TestYieldEstimatorArgument:
         )
         np.testing.assert_array_equal(np.asarray(a), np.asarray(b))
 
-    def test_snr_estimator_object_matches_default(self):
-        """An SNREstimator with the same config reproduces the default path."""
-        from coronalyze import snr_estimator
+    def test_mawet_estimator_object_matches_default(self):
+        """A Mawet estimator with the same config reproduces the default path."""
+        from coronalyze import DetectionEstimator
 
         science, star, positions, fwhm = self._scene()
         default = calculate_yield_snr(science, positions, fwhm, star_model=star)
-        est = snr_estimator(fwhm=fwhm)
+        est = DetectionEstimator.mawet(fwhm=fwhm)
         via_est = calculate_yield_snr(
             science, positions, fwhm, star_model=star, estimator=est
         )
@@ -216,19 +216,26 @@ class TestYieldEstimatorArgument:
         assert out.shape == (2,)
         assert bool(jnp.all(jnp.isfinite(out)))
 
+    def test_matched_filter_estimator_uses_validity_map(self):
+        """The yield pipeline returns the matched-filter statistic with the mask."""
+        from coronalyze import DetectionEstimator
 
-class TestEstimatorGuard:
-    """calculate_yield_snr rejects estimators whose signature would misbind."""
-
-    def test_matched_filter_estimator_rejected(self):
-        """Passing a MatchedFilterSNREstimator raises TypeError."""
-        from coronalyze import MatchedFilterSNREstimator
-
-        science = jnp.ones((64, 64))
-        star = jnp.ones((64, 64))
-        positions = jnp.array([[32.0, 44.0]])
-        estimator = MatchedFilterSNREstimator(fwhm=4.0)
-        with pytest.raises(TypeError, match="annulus_inner"):
-            calculate_yield_snr(
-                science, positions, 4.0, star_model=star, estimator=estimator
-            )
+        science, star, positions, fwhm = self._scene()
+        validity = jnp.ones_like(science).at[:, :50].set(0.0)
+        estimator = DetectionEstimator.matched_filter(
+            fwhm, annulus_inner=10.0, annulus_outer=30.0
+        )
+        out = calculate_yield_snr(
+            science,
+            positions,
+            fwhm,
+            star_model=star,
+            validity_map=validity,
+            estimator=estimator,
+        )
+        residual = science - star
+        expected = estimator(residual, positions, validity).statistic
+        unmasked = estimator(residual, positions).statistic
+        np.testing.assert_array_equal(out, expected)
+        assert bool(jnp.all(jnp.isfinite(out)))
+        assert not np.array_equal(out, unmasked)

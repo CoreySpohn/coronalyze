@@ -33,14 +33,11 @@ Requires a residual image and planet positions from your observation.
 
 ```python notest
 import coronalyze as cz
-import jax.numpy as jnp
 
-# Calculate SNR at planet positions using Mawet et al. (2014)
-snr_values = cz.snr(residual_image, planet_positions, fwhm=4.5)
-
-# Or use the estimator pattern for efficient batch processing
-estimator = cz.snr_estimator(fwhm=4.5)
-snr_values = estimator(residual_image, planet_positions)
+estimator = cz.DetectionEstimator.mawet(fwhm=4.5)
+stats = estimator(residual_image, planet_positions)
+snr_values = stats.statistic
+detection_map = estimator.map(residual_image)
 ```
 
 ## Pairing with coronagraphoto

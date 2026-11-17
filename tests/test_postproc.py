@@ -14,8 +14,8 @@ from hwoutils.grids import PixelGrid
 from hwoutils.spectral import Band
 
 from coronalyze.contracts import DetectionStats, FrameSet
+from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.modeling import inject_planet
-from coronalyze.core.snr import snr
 from coronalyze.postproc import AbstractPostProcessing, MawetPostProcessing
 
 FWHM_PX = 4.0
@@ -51,14 +51,14 @@ def test_abstract_postprocessing_cannot_instantiate():
 
 
 def test_mawet_arm_statistic_matches_snr_function():
-    """Test that the Mawet arm's statistic matches the standalone snr() function."""
+    """Test that the Mawet arm's statistic matches the estimator on the same image."""
     key = jr.PRNGKey(0)
     image = jr.normal(key, (64, 64))
     positions = jnp.array([[32.0, 48.0], [16.0, 32.0]])
     fs = make_frameset(image)
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)
     stats = arm.detect(fs, positions)
-    expected = snr(image, positions, fwhm=FWHM_PX)
+    expected = DetectionEstimator.mawet(FWHM_PX)(image, positions).statistic
     assert isinstance(stats, DetectionStats)
     assert jnp.allclose(stats.statistic, expected, equal_nan=True)
     assert stats.statistic_kind == "mawet_t"
@@ -126,7 +126,7 @@ def test_mawet_arm_ignores_references_and_uses_validity():
     with_refs = arm.detect(fs, positions, references=make_frameset(image))
     without = arm.detect(fs, positions)
     assert jnp.allclose(with_refs.statistic, without.statistic, equal_nan=True)
-    expected = snr(image, positions, fwhm=FWHM_PX, validity_map=validity)
+    expected = DetectionEstimator.mawet(FWHM_PX)(image, positions, validity).statistic
     assert jnp.allclose(without.statistic, expected, equal_nan=True)
 
 
@@ -138,7 +138,7 @@ def test_mawet_arm_multiframe_uses_coadd():
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)
     positions = jnp.array([[32.0, 48.0]])
     stats = arm.detect(fs, positions)
-    expected = snr(fs.coadd(), positions, fwhm=FWHM_PX)
+    expected = DetectionEstimator.mawet(FWHM_PX)(fs.coadd(), positions).statistic
     assert jnp.allclose(stats.statistic, expected, equal_nan=True)
 
 
@@ -161,7 +161,7 @@ def test_mawet_arm_coadd_uses_content_differing_frames():
     """Test that the arm coadds content-differing frames rather than using frames[0].
 
     Frame 0 carries the planet at double amplitude; frame 1 is planet-free.
-    The exposure-weighted coadd reproduces snr() on the explicit coadd and
+    The exposure-weighted coadd reproduces the Mawet statistic on the explicit coadd and
     differs from the frames[0]-only statistic. (An unweighted mean is
     scale-proportional to the coadd, so scale invariance makes those two
     indistinguishable BY CONSTRUCTION; frame selection is the failure mode
@@ -189,10 +189,14 @@ def test_mawet_arm_coadd_uses_content_differing_frames():
     arm = MawetPostProcessing(fwhm_px=FWHM_PX)
     stats = arm.detect(fs, planet_pos[None, :])
     explicit_coadd = jnp.sum(frames, axis=0) / jnp.sum(exposure)
-    expected = snr(explicit_coadd, planet_pos[None, :], FWHM_PX)
+    expected = DetectionEstimator.mawet(FWHM_PX)(
+        explicit_coadd, planet_pos[None, :]
+    ).statistic
     np.testing.assert_array_equal(np.asarray(stats.statistic), np.asarray(expected))
     # frames[0]-only and unweighted-mean statistics differ from the coadd's.
-    from_frame0 = snr(frames[0], planet_pos[None, :], FWHM_PX)
+    from_frame0 = DetectionEstimator.mawet(FWHM_PX)(
+        frames[0], planet_pos[None, :]
+    ).statistic
     assert not np.array_equal(np.asarray(stats.statistic), np.asarray(from_frame0))
 
 

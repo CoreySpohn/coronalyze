@@ -16,11 +16,9 @@ import functools
 import jax
 import jax.numpy as jnp
 
-from coronalyze.contracts import DetectionStats
-from coronalyze.core.matched_filter import MatchedFilterSNREstimator
+from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.modeling import subtract_disk, subtract_star
 from coronalyze.core.pca import get_pca_basis, pca_subtract
-from coronalyze.core.snr import snr
 
 
 @functools.partial(jax.jit, static_argnames=["n_modes"])
@@ -70,7 +68,7 @@ def calculate_yield_snr(
     disk_scale: float = 1.0,
     exclusion_buffer: float = 0.5,
     validity_map: jnp.ndarray = None,
-    estimator=None,
+    estimator: DetectionEstimator | None = None,
 ) -> jnp.ndarray:
     """End-to-end yield SNR calculation.
 
@@ -93,19 +91,12 @@ def calculate_yield_snr(
             of angular step (default 0.5). Prevents PSF wing leakage.
         validity_map: Optional 2D mask (1=valid, 0=invalid) to exclude
             known companions, bad pixels, or edge regions.
-        estimator: Optional detection estimator called as
-            estimator(residual, planet_positions, validity_map). None (the
-            default) uses the frozen Mawet snr() path with the fwhm and
-            exclusion_buffer arguments; an SNREstimator or a composed
-            DetectionEstimator overrides them (its own configuration wins).
-            The return is always the (N,) statistic array. Caution: the
-            estimator is invoked positionally, so an object whose third
-            argument is not a validity map (e.g. MatchedFilterSNREstimator,
-            which takes annulus_inner there) is rejected with a TypeError;
-            wrap such estimators in a DetectionEstimator instead.
+        estimator: Optional DetectionEstimator. The default builds a Mawet
+            estimator with fwhm and exclusion_buffer. A supplied estimator
+            uses its own configuration.
 
     Returns:
-        SNR values for each planet position.
+        Detection statistic values for each planet position.
 
     Example::
 
@@ -145,21 +136,5 @@ def calculate_yield_snr(
         residual = subtract_disk(residual, disk_model, disk_scale)
 
     if estimator is None:
-        return snr(
-            residual,
-            planet_positions,
-            fwhm,
-            exclusion_buffer=exclusion_buffer,
-            validity_map=validity_map,
-        )
-    if isinstance(estimator, MatchedFilterSNREstimator):
-        raise TypeError(
-            "MatchedFilterSNREstimator takes annulus_inner as its third "
-            "positional argument, so calculate_yield_snr would misbind "
-            "validity_map; compose a DetectionEstimator (GaussianFilter + "
-            "AnnulusSampler + AnnulusSigmaTest) instead."
-        )
-    result = estimator(residual, planet_positions, validity_map)
-    if isinstance(result, DetectionStats):
-        return result.statistic
-    return result
+        estimator = DetectionEstimator.mawet(fwhm, exclusion_buffer=exclusion_buffer)
+    return estimator(residual, planet_positions, validity_map).statistic
