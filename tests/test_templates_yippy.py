@@ -8,7 +8,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation
+from hwoutils.grids import Frame, Image, Measure, PixelGrid, SkyOrientation
+from hwoutils.spectral import Band
 from optixstuff import MultiBandCoronagraph, SourcePSFs
 from optixstuff.coronagraph import AbstractTableCoronagraph
 from yippy import Coronagraph, open_yip, yip_info
@@ -32,14 +33,18 @@ class SyntheticCoronagraph(AbstractTableCoronagraph):
 
     grid: PixelGrid
 
-    bandpass: None = None
+    bandpass: Band
     outer_working_angle_lod: None = None
 
     @property
     def sky_trans(self):
         """Use the same geometry for sky and source products."""
         return Image(
-            jnp.ones(self.grid.shape), self.grid, (), "per_unit_area", "transmission"
+            jnp.ones(self.grid.shape),
+            self.grid,
+            (),
+            Measure.intensive(),
+            "transmission",
         )
 
     @property
@@ -70,7 +75,7 @@ class SyntheticCoronagraph(AbstractTableCoronagraph):
             ),
             self.grid,
             ("source",),
-            "per_pixel",
+            Measure.integral(),
             "stellar_flux_fraction",
             reconstruction="cubic",
         )
@@ -116,8 +121,10 @@ def test_peak_within_002_pixel_of_stamp_center(size, unit, rotated):
     # geometry at the selected wavelength displaces the off-axis template.
     other = PixelGrid.regular((25, 25), 0.45, "lod", frame=science_frame)
     bands = MultiBandCoronagraph(
-        (500.0, 700.0),
-        (SyntheticCoronagraph(other), SyntheticCoronagraph(native)),
+        (
+            SyntheticCoronagraph(other, Band(490, 510)),
+            SyntheticCoronagraph(native, Band(690, 710)),
+        ),
         reference_wavelength_nm=500.0 if size == 40 else 700.0,
     )
     provider = YippyTemplateProvider(bands, science, 15, wavelength_nm=700.0)

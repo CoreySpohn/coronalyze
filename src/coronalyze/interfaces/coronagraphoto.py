@@ -1,7 +1,7 @@
 """Adapters for coronagraphoto electron Images on shared detector grids."""
 
 import jax.numpy as jnp
-from hwoutils.grids import Frame, Image, PixelGrid
+from hwoutils.grids import Frame, Image, Measure, PixelGrid
 
 from coronalyze.core.detection.estimator import DetectionEstimator
 
@@ -12,7 +12,7 @@ def extract_image(detector_readout: Image) -> jnp.ndarray:
     Counts retain their electron units. Geometry remains on detector_readout.grid.
     """
     if (
-        detector_readout.measure != "per_pixel"
+        detector_readout.measure != Measure.integral()
         or detector_readout.quantity != "electrons"
     ):
         raise ValueError("expected per-pixel electron counts")

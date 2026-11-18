@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from hwoutils import constants
-from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation
+from hwoutils.grids import Frame, Image, Measure, PixelGrid, SkyOrientation
 
 from coronalyze.interfaces.coronagraphoto import (
     analyze_observation,
@@ -30,7 +30,7 @@ class TestExtractImage:
                 image,
                 PixelGrid.regular((50, 50), 0.02, "arcsec"),
                 (),
-                "per_pixel",
+                Measure.integral(),
                 "electrons",
             )
         )
@@ -45,7 +45,7 @@ class TestExtractImage:
                 datacube,
                 PixelGrid.regular((50, 50), 0.02, "arcsec"),
                 ("band",),
-                "per_pixel",
+                Measure.integral(),
                 "electrons",
             )
         )
@@ -139,7 +139,7 @@ class TestAnalyzeObservation:
                 image,
                 PixelGrid.regular(shape, 0.0218, "arcsec"),
                 (),
-                "per_pixel",
+                Measure.integral(),
                 "electrons",
             ),
             frame=Frame(550.0, 6.0, "circumscribed"),
@@ -248,7 +248,9 @@ def test_rotated_observed_image_sky_position(parity):
         "arcsec",
         orientation=SkyOrientation(90.0, parity),
     )
-    observed = Image(jnp.zeros((2, 20, 24)), grid, ("band",), "per_pixel", "electrons")
+    observed = Image(
+        jnp.zeros((2, 20, 24)), grid, ("band",), Measure.integral(), "electrons"
+    )
     # E=0.09, N=0.08 -> dy=3, dx=(-parity*0.08-0.01*3)/0.02.
     expected = np.array([11.75, 10.25 + (-parity * 0.08 - 0.03) / 0.02])
     np.testing.assert_allclose(

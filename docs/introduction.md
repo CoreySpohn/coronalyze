@@ -227,7 +227,7 @@ Analytic post-processing uses explicit residual fractions in
 
 Detector count statistics belong to optixstuff; analytic exposure planning belongs
 to jaxedith. This example uses aperture photon integrands, image photon
-integrands, and their wavelength quadrature from the caller's observation.
+integrands, with the wavelength quadrature carried by each rate record.
 
 ```python notest
 from jaxedith.calculator import snr, exposure_time
@@ -236,18 +236,20 @@ plan = exposure_time(
     target_snr,
     rates,
     detector,
-    quadrature,
     frame_time_s=100.0,
-    n_pix=n_pix,
     post_processing=post_processing,
 )
-value = snr(
-    rates, detector, quadrature, plan, n_pix=n_pix, post_processing=post_processing
+value = snr(rates, detector, plan, post_processing=post_processing)
+electrons = detector.electrons(rates.mean)
+mean, variance = detector.mean_and_variance(
+    electrons,
+    plan,
+    n_pix=rates.n_pix,
+    variance_rates=detector.electrons(rates.variance),
+    n_pix_variance=rates.n_pix_variance,
 )
-electrons = detector.electrons(rates, quadrature)
-mean, variance = detector.mean_and_variance(electrons, plan, n_pix=n_pix)
 # For image integrands (one detector pixel per spatial sample):
-image_electrons = detector.electrons(image_rates, quadrature)
+image_electrons = detector.electrons(image_rates)
 counts = detector.draw(key, image_electrons, plan)
 ```
 
