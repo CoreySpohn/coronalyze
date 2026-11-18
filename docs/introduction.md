@@ -201,8 +201,9 @@ provider = YippyTemplateProvider(
 stamp = provider(position_yx)
 ```
 
-The provider uses the coronagraph's `grid` and its `Frame`, including its
-center and full basis. It accepts science grids in arcsec or lambda/D and
+The provider takes the source grid from the selected imaging band's
+`at_wavelength(wavelength_nm)` response, including its frame, center and full
+basis. It accepts science grids in arcsec or lambda/D and
 resamples through `source_psfs(..., grid=...)` using the source Image's
 declared reconstruction. `order` selects interpolation for stamp extraction.
 An unoriented coronagraph grid shares the science detector axes at the given

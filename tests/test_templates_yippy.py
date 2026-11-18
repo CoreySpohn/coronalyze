@@ -3,13 +3,14 @@
 import os
 from dataclasses import replace
 
-import equinox as eqx
 import ineedvalidation as vv
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation, resample
+from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation
+from optixstuff import MultiBandCoronagraph, SourcePSFs
+from optixstuff.coronagraph import AbstractTableCoronagraph
 from yippy import Coronagraph, open_yip, yip_info
 
 from coronalyze.core.detection.estimator import DetectionEstimator
@@ -26,32 +27,54 @@ INJECTION_SEPARATION_LOD = 6.0
 INJECTION_AMPLITUDE = 300.0
 
 
-class SyntheticCoronagraph(eqx.Module):
+class SyntheticCoronagraph(AbstractTableCoronagraph):
     """Analytic off-axis source; field-dependent widths expose swapped offsets."""
 
     grid: PixelGrid
 
-    def source_psfs(self, wavelength_nm, x_lod, y_lod, *, grid):
+    bandpass: None = None
+    outer_working_angle_lod: None = None
+
+    @property
+    def sky_trans(self):
+        """Use the same geometry for sky and source products."""
+        return Image(
+            jnp.ones(self.grid.shape), self.grid, (), "per_unit_area", "transmission"
+        )
+
+    @property
+    def uniform_sky_profile(self):
+        """Detect use of a radial sky response to prepare a point-source stamp."""
+        raise AssertionError("template generation must use the source product")
+
+    def _native_stellar_map(self, stellar_diam_lod):
+        raise AssertionError("template geometry must not require a stellar image")
+
+    def curves(self, *args, **kwargs):
+        """Catch accidental use of scalar performance by the stamp provider."""
+        raise AssertionError(
+            "template generation should use only point-source products"
+        )
+
+    def _native_source_psfs(self, x_lod, y_lod):
         """Return a Gaussian Image at the documented native-grid coordinate."""
         xy = self.grid.coordinates()
         x_lod, y_lod = x_lod[:, None, None], y_lod[:, None, None]
-        return resample(
-            Image(
-                jnp.exp(
-                    -0.5
-                    * (
-                        ((xy.x - x_lod) / (0.35 + 0.04 * x_lod)) ** 2
-                        + ((xy.y - y_lod) / (0.30 + 0.04 * y_lod)) ** 2
-                    )
-                ),
-                self.grid,
-                ("source",),
-                "per_pixel",
-                "stellar_flux_fraction",
-                reconstruction="cubic",
+        image = Image(
+            jnp.exp(
+                -0.5
+                * (
+                    ((xy.x - x_lod) / (0.35 + 0.04 * x_lod)) ** 2
+                    + ((xy.y - y_lod) / (0.30 + 0.04 * y_lod)) ** 2
+                )
             ),
-            grid,
+            self.grid,
+            ("source",),
+            "per_pixel",
+            "stellar_flux_fraction",
+            reconstruction="cubic",
         )
+        return SourcePSFs(image, jnp.ones(image.data.shape[0], dtype=bool))
 
 
 @vv.case("psf-template", "code-verification")
@@ -89,9 +112,15 @@ def test_peak_within_002_pixel_of_stamp_center(size, unit, rotated):
             science.to_arcsec(700.0),
             orientation=SkyOrientation(90.0, 1) if rotated else SkyOrientation(37.0),
         )
-    provider = YippyTemplateProvider(
-        SyntheticCoronagraph(native), science, 15, wavelength_nm=700.0
+    # The other band has its own shape, pitch and diameter. Using reference
+    # geometry at the selected wavelength displaces the off-axis template.
+    other = PixelGrid.regular((25, 25), 0.45, "lod", frame=science_frame)
+    bands = MultiBandCoronagraph(
+        (500.0, 700.0),
+        (SyntheticCoronagraph(other), SyntheticCoronagraph(native)),
+        reference_wavelength_nm=500.0 if size == 40 else 700.0,
     )
+    provider = YippyTemplateProvider(bands, science, 15, wavelength_nm=700.0)
     position = jnp.array([science.center_y - 4.0, science.center_x + 6.0])
     stamp = np.asarray(provider(position))
     y, x = np.indices(stamp.shape)

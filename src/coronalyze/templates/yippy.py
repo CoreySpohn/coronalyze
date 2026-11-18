@@ -10,7 +10,7 @@ from coronalyze.core.detection.patches import extract_patch
 from coronalyze.templates.base import AbstractTemplateProvider
 
 try:
-    from optixstuff import AbstractCoronagraph
+    from optixstuff import AbstractCoronagraph, AbstractImagingCoronagraph
 except ImportError as _err:  # pragma: no cover - exercised only without optixstuff
     raise ImportError(
         "YippyTemplateProvider requires optixstuff; install the extra: "
@@ -28,7 +28,7 @@ class YippyTemplateProvider(AbstractTemplateProvider):
     The returned array is centered at ((stamp_size-1)/2, (stamp_size-1)/2).
     """
 
-    coronagraph: AbstractCoronagraph
+    coronagraph: AbstractImagingCoronagraph
     grid: PixelGrid
     stamp_size: int = eqx.field(static=True)
     order: int = eqx.field(static=True)
@@ -55,22 +55,26 @@ class YippyTemplateProvider(AbstractTemplateProvider):
         order selects nearest (0), linear (1), or cubic (3) stamp extraction.
         The source Image declares the reconstruction used for resampling.
         """
-        if coronagraph.grid.unit != "lod":
+        band = coronagraph.band(wavelength_nm)
+        if not isinstance(band, AbstractImagingCoronagraph):
+            raise TypeError("PSF templates require an AbstractImagingCoronagraph")
+        source_grid = band.at_wavelength(wavelength_nm).source_grid
+        if source_grid.unit != "lod":
             raise ValueError("coronagraph grid must be in lod")
         if grid.unit not in ("arcsec", "lod"):
             raise ValueError("science grid must be in arcsec or lod")
-        if grid.orientation is None and coronagraph.grid.orientation is not None:
+        if grid.orientation is None and source_grid.orientation is not None:
             raise ValueError("science grid must declare the native sky orientation")
         if stamp_size < 1:
             raise ValueError("stamp_size must be positive")
         if order not in (0, 1, 3):
             raise ValueError("order must be 0, 1 or 3")
-        self.coronagraph = coronagraph
+        self.coronagraph = band
         self.grid = grid
         self.stamp_size = int(stamp_size)
         self.order = int(order)
         self.wavelength_nm = float(wavelength_nm)
-        native = coronagraph.grid.to_arcsec(wavelength_nm)
+        native = source_grid.to_arcsec(wavelength_nm)
         self._native_arcsec = (
             replace(native, orientation=grid.orientation)
             if native.orientation is None
@@ -79,18 +83,10 @@ class YippyTemplateProvider(AbstractTemplateProvider):
         self._science_arcsec = (
             grid.to_arcsec(wavelength_nm) if grid.unit == "lod" else grid
         )
-        self._arcsec_per_lod = float(
-            coronagraph.grid.frame.lod_to_arcsec(wavelength_nm)
-        )
+        self._arcsec_per_lod = float(source_grid.frame.lod_to_arcsec(wavelength_nm))
 
         self._target_grid = replace(
-            self._science_arcsec,
-            basis=tuple(
-                tuple(v / self._arcsec_per_lod for v in row)
-                for row in self._science_arcsec.basis
-            ),
-            unit="lod",
-            frame=coronagraph.grid.frame,
+            self._science_arcsec.to_lod(wavelength_nm, source_grid.frame),
             orientation=(grid.orientation if native.orientation is not None else None),
         )
 
@@ -110,5 +106,5 @@ class YippyTemplateProvider(AbstractTemplateProvider):
             jnp.atleast_1d(y / self._arcsec_per_lod),
             grid=self._target_grid,
         )
-        sampled = psfs.data[0]
+        sampled = jnp.where(psfs.valid[0], psfs.image.data[0], jnp.nan)
         return extract_patch(sampled, position_yx, self.stamp_size, order=self.order)
