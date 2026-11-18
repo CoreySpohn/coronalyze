@@ -8,6 +8,33 @@
   left). A nonzero `pa_deg` that is not a multiple of 90 degrees is mirrored
   left-right compared with earlier releases.
 
+## [2.0.0](https://github.com/CoreySpohn/coronalyze/compare/v1.2.0...v2.0.0) (2026-11-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* bind the selected imaging band and its source grid for templates
+* make DetectionEstimator the only detection estimator, with mawet and matched_filter constructors and a map method
+* remove the datasets module; fetch from yippy and skyscapes
+* build yippy templates through the optixstuff contract
+* FrameSet holds a Band and a day offset, and the copied centre, radius and noise models are deleted
+* read shared images, grids and coronagraph products at the boundaries and drop the duplicated post-processing config
+
+### Features
+
+* **calibration:** candidate finder, null counting and injection throughput tools ([730daa2](https://github.com/CoreySpohn/coronalyze/commit/730daa20ef24f397fa6c009a0aa387252f0ba86e))
+* **detection:** MapFilter reads a precomputed statistic map ([ca4b869](https://github.com/CoreySpohn/coronalyze/commit/ca4b86988ba34676ad56aec95b22b030e51f9786))
+* read shared images, grids and coronagraph products at the boundaries and drop the duplicated post-processing config ([f9f887f](https://github.com/CoreySpohn/coronalyze/commit/f9f887f732bebf7ca7779f2dea91c697fb8bfa66))
+
+
+### Code Refactoring
+
+* bind the selected imaging band and its source grid for templates ([d2aa7e7](https://github.com/CoreySpohn/coronalyze/commit/d2aa7e7683937e01276e2fb64c692c5683c4797b))
+* build yippy templates through the optixstuff contract ([aed21bf](https://github.com/CoreySpohn/coronalyze/commit/aed21bf23378376038a9b6d858e496a7a91dc255))
+* FrameSet holds a Band and a day offset, and the copied centre, radius and noise models are deleted ([41a6abd](https://github.com/CoreySpohn/coronalyze/commit/41a6abd055a5a2d5e20e1e3900624bc7b6a28424))
+* make DetectionEstimator the only detection estimator, with mawet and matched_filter constructors and a map method ([815a540](https://github.com/CoreySpohn/coronalyze/commit/815a5403c125a1439719ca0c13f561024d9676b4))
+* remove the datasets module; fetch from yippy and skyscapes ([02776e9](https://github.com/CoreySpohn/coronalyze/commit/02776e924c46a23a45aa613cd32d230b5702939d))
+
 ## [1.2.0](https://github.com/CoreySpohn/coronalyze/compare/v1.1.1...v1.2.0) (2026-11-05)
 
 
