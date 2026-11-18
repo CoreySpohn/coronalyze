@@ -10,8 +10,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from hwoutils.grids import Frame, Image, PixelGrid, SkyOrientation, resample
-from yippy import Coronagraph, fetch_yip
-from yippy.datasets import cache_dir
+from yippy import Coronagraph, open_yip, yip_info
 
 from coronalyze.core.detection.estimator import DetectionEstimator
 from coronalyze.core.detection.filters import PSFTemplateFilter
@@ -19,7 +18,8 @@ from coronalyze.core.detection.samplers import ApertureSampler
 from coronalyze.core.detection.significance import TwoSampleTTest
 from coronalyze.templates.yippy import YippyTemplateProvider
 
-_CACHED = (cache_dir() / "eac1_aavc_2d.zip").exists()
+_ARCHIVE = yip_info("eac1_aavc_2d")
+_CACHED = _ARCHIVE.archive_path().is_file()
 _OPTED_IN = os.environ.get("CORONALYZE_FETCH_DATA") == "1"
 STAMP_SIZE = 21
 INJECTION_SEPARATION_LOD = 6.0
@@ -117,7 +117,7 @@ def test_peak_within_002_pixel_of_stamp_center(size, unit, rotated):
 @pytest.fixture(scope="session")
 def coronagraph() -> Coronagraph:
     """Load the eac1 YIP coronagraph once per test session."""
-    return Coronagraph(fetch_yip("eac1_aavc_2d"))
+    return open_yip(_ARCHIVE.name).prepare()
 
 
 @pytest.mark.slow
